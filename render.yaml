@@ -20,3 +20,5 @@ services:
         value: ""
       - key: NODE_ENV
         value: production
+      - key: REACTION_ROLES_CHANNEL
+        value: "1520182858583375892"

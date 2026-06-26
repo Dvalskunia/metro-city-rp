@@ -5,6 +5,7 @@ const cors = require('cors');
 const query = require('samp-query');
 const { WebhookClient, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const fs = require('fs');
+const http = require('http');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,6 +16,7 @@ const SAMP_PORT = parseInt(process.env.SAMP_PORT, 10) || 1381;
 const QUERY_INTERVAL = parseInt(process.env.QUERY_INTERVAL, 10) || 300000;
 const WEBSITE_URL = process.env.WEBSITE_URL || '';
 const CURRENT_EVENT = process.env.CURRENT_EVENT || '';
+const SELF_PING_URL = process.env.SELF_PING_URL || '';
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -111,10 +113,12 @@ const buildOnline = async (r, ping) => {
   const bgPath = getBgPath();
   const files = bgPath ? [new AttachmentBuilder(bgPath, { name: 'background.png' })] : [];
 
+  const websiteUrl = WEBSITE_URL || 'https://metro-city-rp.onrender.com';
   const desc = [
     '```fix\n' + SAMP_HOST + ':' + SAMP_PORT + '```',
     '', '> **🟢 სტატუსი:** `ონლაინ`',
     '> **👥 მოთამაშეები:** `' + cur + ' / ' + max + '`',
+    '> **🌐 ვებსაიტი:** ' + websiteUrl,
   ];
   if (cur > 0) desc.push('> **📊 პიკი:** `' + peakPlayers + '`');
   desc.push('', '```' + bar(cur, max) + '  ' + cur + '/' + max + '```');
@@ -148,6 +152,7 @@ const buildOffline = async () => {
       '```fix\n' + SAMP_HOST + ':' + SAMP_PORT + '```',
       '', '> **🔴 სტატუსი:** `ოფლაინ`',
       '> **❌ სერვერი მიუწვდომელია**',
+      '> **🌐 ვებსაიტი:** ' + (WEBSITE_URL || 'https://metro-city-rp.onrender.com'),
       '', '━━━━━━━━━━━━━━━━━━━━━━━━━━',
     ].join('\n'),
     fields: [
@@ -162,28 +167,52 @@ const buildOffline = async () => {
   return { files, embeds: [embed], components: [buttons] };
 };
 
-const sendToDiscord = async (payload) => {
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+const sendToDiscord = async (payload, retries = 3) => {
   if (!webhook) return;
-  try {
-    await webhook.send(payload);
-    console.log('[✅ DISCORD] ' + now());
-  } catch (e) {
-    console.error('[❌ DISCORD]', e.message);
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await webhook.send(payload);
+      console.log('[✅ DISCORD] ' + now());
+      return;
+    } catch (e) {
+      console.error('[❌ DISCORD] მცდელობა ' + attempt + '/' + retries + ':', e.message);
+      if (attempt < retries) await sleep(5000 * attempt);
+    }
   }
+  console.error('[❌ DISCORD] ყველა მცდელობა წარუმატებელია');
 };
 
 const queryAndSend = async () => {
   console.log('[⏳ QUERY] ' + SAMP_HOST + ':' + SAMP_PORT + ' ...');
-  const start = Date.now();
-  query({ host: SAMP_HOST, port: SAMP_PORT, timeout: 5000 }, async (err, res) => {
-    const ping = Date.now() - start;
-    if (err) {
-      console.log('[⚠️ OFFLINE]', err.message || err);
-      sendToDiscord(await buildOffline());
-    } else {
-      console.log('[📊 ONLINE] ' + (res.online || 0) + '/' + (res.maxplayers || 0) + ' | ' + (res.mapname || 'N/A') + ' | ' + ping + 'ms');
-      sendToDiscord(await buildOnline(res, ping));
-    }
+  try {
+    const start = Date.now();
+    query({ host: SAMP_HOST, port: SAMP_PORT, timeout: 5000 }, async (err, res) => {
+      const ping = Date.now() - start;
+      if (err) {
+        console.log('[⚠️ OFFLINE]', err.message || err);
+        await sendToDiscord(await buildOffline());
+      } else {
+        console.log('[📊 ONLINE] ' + (res.online || 0) + '/' + (res.maxplayers || 0) + ' | ' + (res.mapname || 'N/A') + ' | ' + ping + 'ms');
+        await sendToDiscord(await buildOnline(res, ping));
+      }
+    });
+  } catch (e) {
+    console.error('[❌ QUERY ERROR]', e.message);
+  }
+};
+
+// ── Self-Ping: Render free tier არ ჩაქრობა ──
+
+const selfPing = () => {
+  if (!SELF_PING_URL) return;
+  const url = SELF_PING_URL;
+  console.log('[🔄 SELF-PING] ' + url);
+  http.get(url, (res) => {
+    console.log('[✅ SELF-PING] ' + res.statusCode);
+  }).on('error', (e) => {
+    console.error('[❌ SELF-PING]', e.message);
   });
 };
 
@@ -203,7 +232,7 @@ app.get('/api/server-info', async (req, res) => {
   }
 });
 
-app.get('/api/health', (req, res) => res.json({ ok: true }));
+app.get('/api/health', (req, res) => res.json({ ok: true, uptime: process.uptime() }));
 
 // ── Start ──
 
@@ -216,13 +245,22 @@ app.listen(PORT, () => {
   console.log('  ║  Server:   ' + SAMP_HOST + ':' + SAMP_PORT + '           ║');
   console.log('  ║  Bot:      ' + (webhook ? 'ON' : 'OFF') + '                         ║');
   console.log('  ║  Interval: ' + (QUERY_INTERVAL / 60000) + ' min                  ║');
+  console.log('  ║  Self-Ping: ' + (SELF_PING_URL ? 'ON' : 'OFF') + '                        ║');
   console.log('  ╚═══════════════════════════════════╝');
   console.log('');
 
   queryServer().then(data => { cachedData = data; lastFetch = Date.now(); });
+
   queryAndSend();
   setInterval(queryAndSend, QUERY_INTERVAL);
+
+  if (SELF_PING_URL) {
+    selfPing();
+    setInterval(selfPing, 10 * 60 * 1000);
+  }
 });
 
-process.on('SIGINT', () => process.exit(0));
-process.on('unhandledRejection', (e) => console.error('[ERR]', e));
+process.on('SIGINT', () => { console.log('[🛑] Shutting down...'); process.exit(0); });
+process.on('SIGTERM', () => { console.log('[🛑] Shutting down...'); process.exit(0); });
+process.on('uncaughtException', (e) => { console.error('[💥 UNCAUGHT]', e.message); });
+process.on('unhandledRejection', (e) => { console.error('[ERR]', e); });

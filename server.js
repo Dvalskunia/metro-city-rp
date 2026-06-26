@@ -499,6 +499,15 @@ function startWelcomeBot() {
     return member.permissions.has('BanMembers') || member.permissions.has('KickMembers') || member.permissions.has('ModerateMembers') || member.permissions.has('ManageMessages');
   }
 
+  function modEmbed(title, desc, color) {
+    return new EmbedBuilder()
+      .setTitle(title)
+      .setDescription(desc)
+      .setColor(color || 0xe74c3c)
+      .setFooter({ text: 'Metro City RP \u2022 Moderation' })
+      .setTimestamp();
+  }
+
   function getUserData(userId) {
     if (!userMessages.has(userId)) {
       userMessages.set(userId, { timestamps: [], lastContent: '', floodCount: 0 });

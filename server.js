@@ -7,6 +7,8 @@ const { Client, GatewayIntentBits, WebhookClient, AttachmentBuilder, ActionRowBu
 const fs = require('fs');
 const https = require('https');
 
+const PREFIX = '!';
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -490,6 +492,10 @@ function startWelcomeBot() {
   const INVITE_REGEX = /(discord\.gg|discordapp\.com\/invites)\/[a-zA-Z0-9]+/gi;
 
   function isModerator(member) {
+    return member.permissions.has('BanMembers') || member.permissions.has('KickMembers') || member.permissions.has('ModerateMembers') || member.permissions.has('ManageMessages');
+  }
+
+  function hasMod(member) {
     return member.permissions.has('BanMembers') || member.permissions.has('KickMembers') || member.permissions.has('ModerateMembers') || member.permissions.has('ManageMessages');
   }
 

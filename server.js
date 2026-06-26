@@ -136,11 +136,7 @@ const buildOnline = async (r, queryPing) => {
   if (CURRENT_EVENT) desc.push('> **⭐ აქცია:** `' + CURRENT_EVENT + '`');
   desc.push('', '━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-  const avgPing = r.avgPing || 0;
-  const pingDisplay = cur > 0 ? avgPing + 'ms' : queryPing + 'ms';
-
   const fields = [
-    { name: '📡 პინგი', value: '`' + pingDisplay + '`', inline: true },
     { name: '🗺️ რუკა', value: '`' + (r.mapname || 'N/A') + '`', inline: true },
     { name: '⏰ დრო', value: '`' + now() + '`', inline: true },
   ];
@@ -170,7 +166,6 @@ const buildOffline = async () => {
       '', '━━━━━━━━━━━━━━━━━━━━━━━━━━',
     ].join('\n'),
     fields: [
-      { name: '📡 პინგი', value: '`—`', inline: true },
       { name: '🗺️ რუკა', value: '`—`', inline: true },
       { name: '⏰ დრო', value: '`' + now() + '`', inline: true },
     ],

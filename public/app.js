@@ -40,8 +40,6 @@ function updateUI(data) {
     document.getElementById('playersMaxBig').textContent = max;
 
     // Mini stats
-    const avgPing = data.avgPing || 0;
-    document.getElementById('serverPing2').textContent = avgPing > 0 ? avgPing + ' ms' : '-- ms';
     document.getElementById('peakPlayers2').textContent = data.peakPlayers || '--';
     document.getElementById('serverMap2').textContent = data.map || 'N/A';
 

@@ -258,8 +258,8 @@ async function setupReactionRoles(guild) {
     const existing = messages.find(m => m.author.id === discordBot.user.id && m.embeds.length > 0 && m.embeds[0].title);
 
     if (existing) {
-      console.log('[✅ REACTION ROLES] Message already exists: ' + existing.id);
-      return;
+      console.log('[🔄 REACTION ROLES] Deleting old message: ' + existing.id);
+      await existing.delete().catch(() => {});
     }
 
     console.log('[🔍 REACTION ROLES] Sending embed...');

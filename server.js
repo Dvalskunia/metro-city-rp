@@ -450,6 +450,8 @@ function startWelcomeBot() {
       GatewayIntentBits.Guilds,
       GatewayIntentBits.GuildMembers,
       GatewayIntentBits.GuildMessageReactions,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
     ],
   });
 
@@ -469,6 +471,261 @@ function startWelcomeBot() {
 
   discordBot.on('messageReactionAdd', handleReactionAdd);
   discordBot.on('messageReactionRemove', handleReactionRemove);
+
+  // ══════════════════════════════════════
+  //  MODERATION COMMANDS
+  // ══════════════════════════════════════
+
+  const PREFIX = '!';
+  const WARNINGS_FILE = path.join(__dirname, 'warnings.json');
+
+  function loadWarnings() {
+    try {
+      if (fs.existsSync(WARNINGS_FILE)) return JSON.parse(fs.readFileSync(WARNINGS_FILE, 'utf8'));
+    } catch (e) {}
+    return {};
+  }
+
+  function saveWarnings(data) {
+    fs.writeFileSync(WARNINGS_FILE, JSON.stringify(data, null, 2));
+  }
+
+  function hasMod(member) {
+    return member.permissions.has('BanMembers') || member.permissions.has('KickMembers') || member.permissions.has('ModerateMembers') || member.permissions.has('ManageMessages');
+  }
+
+  function modEmbed(title, desc, color) {
+    return new EmbedBuilder()
+      .setTitle(title)
+      .setDescription(desc)
+      .setColor(color || 0xe74c3c)
+      .setFooter({ text: 'Metro City RP \u2022 Moderation' })
+      .setTimestamp();
+  }
+
+  discordBot.on('messageCreate', async (message) => {
+    if (message.author.bot) return;
+    if (!message.content.startsWith(PREFIX)) return;
+    if (!message.guild) return;
+
+    const args = message.content.slice(PREFIX.length).trim().split(/ +/);
+    const cmd = args.shift().toLowerCase();
+    const member = message.member;
+
+    // !help
+    if (cmd === 'help') {
+      const embed = modEmbed('\uD83D\uDCD3 Moderation Commands', [
+        '`!ban @user [reason]` \u2014 Ban a user',
+        '`!kick @user [reason]` \u2014 Kick a user',
+        '`!mute @user <minutes> [reason]` \u2014 Mute (timeout) a user',
+        '`!unmute @user` \u2014 Unmute a user',
+        '`!warn @user [reason]` \u2014 Warn a user',
+        '`!warnings @user` \u2014 View warnings',
+        '`!clear <amount>` \u2014 Delete messages',
+        '`!serverinfo` \u2014 Server info',
+        '`!userinfo @user` \u2014 User info',
+      ].join('\n'), 0x00d4ff);
+      return message.reply({ embeds: [embed] });
+    }
+
+    // !ban
+    if (cmd === 'ban') {
+      if (!hasMod(member)) return message.reply({ embeds: [modEmbed('\u274C Permission Denied', 'You need **Ban Members** permission.')] });
+      const target = message.mentions.members.first() || (args[0] && await message.guild.members.fetch(args[0]).catch(() => null));
+      if (!target) return message.reply({ embeds: [modEmbed('\u274C Error', 'Usage: `!ban @user [reason]`')] });
+      if (target.id === message.author.id) return message.reply({ embeds: [modEmbed('\u274C Error', 'You cannot ban yourself.')] });
+      if (target.roles.highest.position >= member.roles.highest.position && message.guild.ownerId !== message.author.id) {
+        return message.reply({ embeds: [modEmbed('\u274C Error', 'Cannot ban someone with equal or higher role.')] });
+      }
+      const reason = args.slice(1).join(' ') || 'No reason provided';
+      try {
+        await target.ban({ reason });
+        const embed = modEmbed('\uD83D\uDEAB Banned', [
+          `\uD83D\uDC64 **User:** ${target.user.tag}`,
+          `\uD83D\uDCCB **Moderator:** ${message.author.tag}`,
+          `\uD83D\uDCDD **Reason:** ${reason}`,
+        ].join('\n'), 0xe74c3c);
+        message.reply({ embeds: [embed] });
+        console.log('[MOD] BAN ' + target.user.tag + ' by ' + message.author.tag + ' | ' + reason);
+      } catch (e) {
+        message.reply({ embeds: [modEmbed('\u274C Error', 'Failed to ban: ' + e.message)] });
+      }
+      return;
+    }
+
+    // !kick
+    if (cmd === 'kick') {
+      if (!hasMod(member)) return message.reply({ embeds: [modEmbed('\u274C Permission Denied', 'You need **Kick Members** permission.')] });
+      const target = message.mentions.members.first() || (args[0] && await message.guild.members.fetch(args[0]).catch(() => null));
+      if (!target) return message.reply({ embeds: [modEmbed('\u274C Error', 'Usage: `!kick @user [reason]`')] });
+      if (target.id === message.author.id) return message.reply({ embeds: [modEmbed('\u274C Error', 'You cannot kick yourself.')] });
+      if (target.roles.highest.position >= member.roles.highest.position && message.guild.ownerId !== message.author.id) {
+        return message.reply({ embeds: [modEmbed('\u274C Error', 'Cannot kick someone with equal or higher role.')] });
+      }
+      const reason = args.slice(1).join(' ') || 'No reason provided';
+      try {
+        await target.kick(reason);
+        const embed = modEmbed('\uD83D\uDC62 Kicked', [
+          `\uD83D\uDC64 **User:** ${target.user.tag}`,
+          `\uD83D\uDCCB **Moderator:** ${message.author.tag}`,
+          `\uD83D\uDCDD **Reason:** ${reason}`,
+        ].join('\n'), 0xf1c40f);
+        message.reply({ embeds: [embed] });
+        console.log('[MOD] KICK ' + target.user.tag + ' by ' + message.author.tag + ' | ' + reason);
+      } catch (e) {
+        message.reply({ embeds: [modEmbed('\u274C Error', 'Failed to kick: ' + e.message)] });
+      }
+      return;
+    }
+
+    // !mute
+    if (cmd === 'mute') {
+      if (!hasMod(member)) return message.reply({ embeds: [modEmbed('\u274C Permission Denied', 'You need **Moderate Members** permission.')] });
+      const target = message.mentions.members.first() || (args[0] && await message.guild.members.fetch(args[0]).catch(() => null));
+      if (!target) return message.reply({ embeds: [modEmbed('\u274C Error', 'Usage: `!mute @user <minutes> [reason]`')] });
+      if (target.id === message.author.id) return message.reply({ embeds: [modEmbed('\u274C Error', 'You cannot mute yourself.')] });
+      if (target.roles.highest.position >= member.roles.highest.position && message.guild.ownerId !== message.author.id) {
+        return message.reply({ embeds: [modEmbed('\u274C Error', 'Cannot mute someone with equal or higher role.')] });
+      }
+      const minutes = parseInt(args[1]) || 10;
+      const reason = args.slice(2).join(' ') || 'No reason provided';
+      try {
+        await target.timeout(minutes * 60 * 1000, reason);
+        const embed = modEmbed('\uD83D\uDD07 Muted', [
+          `\uD83D\uDC64 **User:** ${target.user.tag}`,
+          `\u23F0 **Duration:** ${minutes} minutes`,
+          `\uD83D\uDCCB **Moderator:** ${message.author.tag}`,
+          `\uD83D\uDCDD **Reason:** ${reason}`,
+        ].join('\n'), 0x9b59b6);
+        message.reply({ embeds: [embed] });
+        console.log('[MOD] MUTE ' + target.user.tag + ' (' + minutes + 'min) by ' + message.author.tag);
+      } catch (e) {
+        message.reply({ embeds: [modEmbed('\u274C Error', 'Failed to mute: ' + e.message)] });
+      }
+      return;
+    }
+
+    // !unmute
+    if (cmd === 'unmute') {
+      if (!hasMod(member)) return message.reply({ embeds: [modEmbed('\u274C Permission Denied', 'You need **Moderate Members** permission.')] });
+      const target = message.mentions.members.first() || (args[0] && await message.guild.members.fetch(args[0]).catch(() => null));
+      if (!target) return message.reply({ embeds: [modEmbed('\u274C Error', 'Usage: `!unmute @user`')] });
+      try {
+        await target.timeout(null);
+        const embed = modEmbed('\uD83D\uDD0A Unmuted', [
+          `\uD83D\uDC64 **User:** ${target.user.tag}`,
+          `\uD83D\uDCCB **Moderator:** ${message.author.tag}`,
+        ].join('\n'), 0x2ecc71);
+        message.reply({ embeds: [embed] });
+        console.log('[MOD] UNMUTE ' + target.user.tag + ' by ' + message.author.tag);
+      } catch (e) {
+        message.reply({ embeds: [modEmbed('\u274C Error', 'Failed to unmute: ' + e.message)] });
+      }
+      return;
+    }
+
+    // !warn
+    if (cmd === 'warn') {
+      if (!hasMod(member)) return message.reply({ embeds: [modEmbed('\u274C Permission Denied', 'You need **Manage Messages** permission.')] });
+      const target = message.mentions.members.first() || (args[0] && await message.guild.members.fetch(args[0]).catch(() => null));
+      if (!target) return message.reply({ embeds: [modEmbed('\u274C Error', 'Usage: `!warn @user [reason]`')] });
+      const reason = args.slice(1).join(' ') || 'No reason provided';
+      const warnings = loadWarnings();
+      if (!warnings[target.id]) warnings[target.id] = [];
+      warnings[target.id].push({ reason, moderator: message.author.tag, date: new Date().toISOString() });
+      saveWarnings(warnings);
+      const count = warnings[target.id].length;
+      const embed = modEmbed('\u26A0\uFE0F Warned', [
+        `\uD83D\uDC64 **User:** ${target.user.tag}`,
+        `\uD83D\uDCCB **Moderator:** ${message.author.tag}`,
+        `\uD83D\uDCDD **Reason:** ${reason}`,
+        `\uD83D\uDCCA **Total Warnings:** ${count}`,
+      ].join('\n'), 0xf39c12);
+      message.reply({ embeds: [embed] });
+      console.log('[MOD] WARN ' + target.user.tag + ' (#' + count + ') by ' + message.author.tag);
+      if (count >= 3) {
+        try {
+          await target.ban({ reason: 'Auto-ban: 3 warnings reached' });
+          message.channel.send({ embeds: [modEmbed('\uD83D\uDEAB Auto-Banned', `${target.user.tag} has been automatically banned (3 warnings).`, 0xe74c3c)] });
+          console.log('[MOD] AUTO-BAN ' + target.user.tag + ' (3 warnings)');
+        } catch (e) {}
+      }
+      return;
+    }
+
+    // !warnings
+    if (cmd === 'warnings') {
+      const target = message.mentions.members.first() || (args[0] && await message.guild.members.fetch(args[0]).catch(() => null));
+      if (!target) return message.reply({ embeds: [modEmbed('\u274C Error', 'Usage: `!warnings @user`')] });
+      const warnings = loadWarnings();
+      const userWarnings = warnings[target.id] || [];
+      if (userWarnings.length === 0) {
+        return message.reply({ embeds: [modEmbed('\u2139\uFE0F Warnings', `${target.user.tag} has no warnings.`, 0x00d4ff)] });
+      }
+      const list = userWarnings.map((w, i) => `**${i + 1}.** ${w.reason} \u2014 *${w.moderator}* (${new Date(w.date).toLocaleDateString()})`).join('\n');
+      const embed = modEmbed('\u26A0\uFE0F Warnings for ' + target.user.tag, list, 0xf39c12);
+      message.reply({ embeds: [embed] });
+      return;
+    }
+
+    // !clear
+    if (cmd === 'clear') {
+      if (!hasMod(member)) return message.reply({ embeds: [modEmbed('\u274C Permission Denied', 'You need **Manage Messages** permission.')] });
+      const amount = parseInt(args[0]);
+      if (!amount || amount < 1 || amount > 100) return message.reply({ embeds: [modEmbed('\u274C Error', 'Usage: `!clear <1-100>`')] });
+      try {
+        const deleted = await message.channel.bulkDelete(amount + 1, true);
+        const embed = modEmbed('\uD83D\uDDD1\uFE0F Cleared', `Deleted **${deleted.size - 1}** messages.`, 0x2ecc71);
+        const msg = await message.channel.send({ embeds: [embed] });
+        setTimeout(() => msg.delete().catch(() => {}), 5000);
+        console.log('[MOD] CLEAR ' + (deleted.size - 1) + ' msgs in #' + message.channel.name + ' by ' + message.author.tag);
+      } catch (e) {
+        message.reply({ embeds: [modEmbed('\u274C Error', 'Failed: ' + e.message)] });
+      }
+      return;
+    }
+
+    // !serverinfo
+    if (cmd === 'serverinfo') {
+      const g = message.guild;
+      const embed = new EmbedBuilder()
+        .setTitle('\uD83C\uDFE2 ' + g.name)
+        .setColor(0x00d4ff)
+        .addFields(
+          { name: '\uD83D\uDC51 Owner', value: `<@${g.ownerId}>`, inline: true },
+          { name: '\uD83D\uDC65 Members', value: String(g.memberCount), inline: true },
+          { name: '\uD83D\uDCCB Channels', value: String(g.channels.cache.size), inline: true },
+          { name: '\uD83C\uDFF4 Roles', value: String(g.roles.cache.size), inline: true },
+          { name: '\uD83C\uDF10 Created', value: `<t:${Math.floor(g.createdTimestamp / 1000)}:R>`, inline: true },
+          { name: '\uD83C\uDFAF Boost Level', value: String(g.premiumTier), inline: true },
+        )
+        .setFooter({ text: 'Metro City RP \u2022 2026' })
+        .setTimestamp();
+      message.reply({ embeds: [embed] });
+      return;
+    }
+
+    // !userinfo
+    if (cmd === 'userinfo') {
+      const target = message.mentions.members.first() || (args[0] && await message.guild.members.fetch(args[0]).catch(() => null));
+      if (!target) return message.reply({ embeds: [modEmbed('\u274C Error', 'Usage: `!userinfo @user`')] });
+      const roles = target.roles.cache.filter(r => r.id !== message.guild.id).map(r => r.toString()).join(', ') || 'None';
+      const embed = new EmbedBuilder()
+        .setTitle('\uD83D\uDC64 ' + target.user.tag)
+        .setThumbnail(target.user.displayAvatarURL({ dynamic: true }))
+        .setColor(target.displayHexColor)
+        .addFields(
+          { name: 'ID', value: target.id, inline: true },
+          { name: '\uD83D\uDCC5 Joined', value: `<t:${Math.floor(target.joinedTimestamp / 1000)}:R>`, inline: true },
+          { name: '\uD83C\uDF1F Account Created', value: `<t:${Math.floor(target.user.createdTimestamp / 1000)}:R>`, inline: true },
+          { name: '\uD83C\uDFF4 Roles', value: roles.length > 1024 ? roles.substring(0, 1020) + '...' : roles, inline: false },
+        )
+        .setFooter({ text: 'Metro City RP \u2022 2026' })
+        .setTimestamp();
+      message.reply({ embeds: [embed] });
+      return;
+    }
+  });
 
   discordBot.once('ready', async () => {
     console.log('[✅] Bot: ' + discordBot.user.tag + ' | Servers: ' + discordBot.guilds.cache.size);

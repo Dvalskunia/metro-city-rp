@@ -688,6 +688,11 @@ function startWelcomeBot() {
       }
       const reason = args.slice(1).join(' ') || 'No reason provided';
       try {
+        await target.send({ embeds: [modEmbed('\uD83D\uDEAB თქვენ გაიგდეთ ბანი', [
+          `\uD83C\uDFE2 **სერვერი:** ${message.guild.name}`,
+          `\uD83D\uDCCB **მოდერატორი:** ${message.author.tag}`,
+          `\uD83D\uDCDD **მიზეზი:** ${reason}`,
+        ].join('\n'), 0xe74c3c)] }).catch(() => {});
         await target.ban({ reason });
         const embed = modEmbed('\uD83D\uDEAB Banned', [
           `\uD83D\uDC64 **User:** ${target.user.tag}`,
@@ -713,6 +718,11 @@ function startWelcomeBot() {
       }
       const reason = args.slice(1).join(' ') || 'No reason provided';
       try {
+        await target.send({ embeds: [modEmbed('\uD83D\uDC62 თქვენ გაიგდეთ კიკით', [
+          `\uD83C\uDFE2 **სერვერი:** ${message.guild.name}`,
+          `\uD83D\uDCCB **მოდერატორი:** ${message.author.tag}`,
+          `\uD83D\uDCDD **მიზეზი:** ${reason}`,
+        ].join('\n'), 0xf1c40f)] }).catch(() => {});
         await target.kick(reason);
         const embed = modEmbed('\uD83D\uDC62 Kicked', [
           `\uD83D\uDC64 **User:** ${target.user.tag}`,
@@ -739,6 +749,12 @@ function startWelcomeBot() {
       const minutes = parseInt(args[1]) || 10;
       const reason = args.slice(2).join(' ') || 'No reason provided';
       try {
+        await target.send({ embeds: [modEmbed('\uD83D\uDD07 თქვენ გაჩუმებული ხართ', [
+          `\uD83C\uDFE2 **სერვერი:** ${message.guild.name}`,
+          `\u23F0 **ხანგრძლივობა:** ${minutes} წუთი`,
+          `\uD83D\uDCCB **მოდერატორი:** ${message.author.tag}`,
+          `\uD83D\uDCDD **მიზეზი:** ${reason}`,
+        ].join('\n'), 0x9b59b6)] }).catch(() => {});
         await target.timeout(minutes * 60 * 1000, reason);
         const embed = modEmbed('\uD83D\uDD07 Muted', [
           `\uD83D\uDC64 **User:** ${target.user.tag}`,
@@ -784,6 +800,13 @@ function startWelcomeBot() {
       warnings[target.id].push({ reason, moderator: message.author.tag, date: new Date().toISOString() });
       saveWarnings(warnings);
       const count = warnings[target.id].length;
+      await target.send({ embeds: [modEmbed('\u26A0\uFE0F გაფრთხილება', [
+        `\uD83C\uDFE2 **სერვერი:** ${message.guild.name}`,
+        `\uD83D\uDCCB **მოდერატორი:** ${message.author.tag}`,
+        `\uD83D\uDCDD **მიზეზი:** ${reason}`,
+        `\uD83D\uDCCA **გაფრთხილებები:** ${count}/3`,
+        count >= 2 ? '\n\u26A0\uFE0F **1 გაფრთხილება დაგრჩა ბანამდე!**' : '',
+      ].join('\n'), 0xf39c12)] }).catch(() => {});
       const embed = modEmbed('\u26A0\uFE0F Warned', [
         `\uD83D\uDC64 **User:** ${target.user.tag}`,
         `\uD83D\uDCCB **Moderator:** ${message.author.tag}`,

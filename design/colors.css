@@ -1,0 +1,60 @@
+/* ========================================
+   METRO CITY ROLE PLAY - Color Palette
+   ======================================== */
+
+/* 
+ * გამოიყენეთ ეს ფერები თქვენს CSS ფაილებში
+ * Use these colors in your CSS files
+ */
+
+:root {
+    /* Primary Colors */
+    --primary-teal: #00d4ff;
+    --primary-dark: #0099cc;
+    --primary-light: #66e5ff;
+    
+    /* Secondary Colors */
+    --secondary-pink: #ff6b9d;
+    --secondary-pink-dark: #cc5580;
+    --secondary-pink-light: #ff99c0;
+    
+    /* Accent Colors */
+    --accent-gold: #ffd700;
+    --accent-gold-dark: #ccac00;
+    --accent-purple: #9d4edd;
+    --accent-purple-dark: #7b3eb5;
+    --accent-green: #00ff88;
+    
+    /* Background Colors */
+    --bg-darkest: #030308;
+    --bg-darker: #050510;
+    --bg-dark: #0a0a1a;
+    --bg-medium: #1a1a3a;
+    --bg-light: #2a2a4a;
+    
+    /* Text Colors */
+    --text-white: #ffffff;
+    --text-light: #e0e0e0;
+    --text-muted: #b0b0b0;
+    --text-dark: #606060;
+    
+    /* Status Colors */
+    --status-online: #00ff88;
+    --status-offline: #ff4444;
+    --status-away: #ffd700;
+    
+    /* Border Colors */
+    --border-teal: rgba(0, 212, 255, 0.3);
+    --border-pink: rgba(255, 107, 157, 0.3);
+    --border-purple: rgba(157, 78, 221, 0.3);
+}
+
+/* 
+ * Color Usage Examples:
+ * 
+ * .button-primary { background: var(--primary-teal); }
+ * .button-secondary { background: var(--secondary-pink); }
+ * .highlight { color: var(--accent-gold); }
+ * .card { background: var(--bg-dark); border: 1px solid var(--border-teal); }
+ * .text-muted { color: var(--text-muted); }
+ */

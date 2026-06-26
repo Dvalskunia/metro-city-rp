@@ -1,0 +1,23 @@
+{
+  "name": "metrocitywebsite",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "discord.js": "^14.26.4",
+    "dotenv": "^16.4.7",
+    "express": "^5.2.1",
+    "node-fetch": "^2.7.0",
+    "samp-query": "^0.1.5",
+    "sharp": "^0.35.2"
+  }
+}

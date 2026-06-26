@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: metro-city-rp
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: WEBHOOK_URL
+        sync: false
+      - key: SAMP_HOST
+        value: 141.94.184.106
+      - key: SAMP_PORT
+        value: "1381"
+      - key: QUERY_INTERVAL
+        value: "300000"
+      - key: WEBSITE_URL
+        sync: false
+      - key: CURRENT_EVENT
+        value: ""
+      - key: NODE_ENV
+        value: production

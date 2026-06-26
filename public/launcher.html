@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ლაუნჩერი - METRO CITY RP</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee+Shade&family=Permanent+Marker&family=Bebas+Neue&family=Russo+One&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #00d4ff;
+            --blue-dark: #0088cc;
+            --blue-glow: rgba(0, 212, 255, 0.4);
+            --black: #000000;
+            --dark: #050a12;
+            --white: #ffffff;
+            --gray: #8899aa;
+            --font-gta: 'Permanent Marker', cursive;
+            --font-head: 'Bebas Neue', sans-serif;
+            --font-body: 'Orbitron', sans-serif;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--black);
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .bg img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: blur(12px) brightness(0.3) saturate(1.4);
+            transform: scale(1.15);
+        }
+
+        .bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.85) 100%);
+        }
+
+        .scanlines {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9999;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 212, 255, 0.015) 2px,
+                rgba(0, 212, 255, 0.015) 4px
+            );
+        }
+
+        .content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            animation: fadeUp 0.8s ease-out;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo {
+            width: 140px;
+            margin-bottom: 24px;
+            filter: drop-shadow(0 0 25px var(--blue-glow));
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .title {
+            font-family: var(--font-gta);
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            color: var(--blue);
+            text-shadow: 0 0 20px var(--blue-glow), 3px 3px 0 #003366;
+            margin-bottom: 8px;
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            font-family: var(--font-head);
+            font-size: clamp(1rem, 2.5vw, 1.4rem);
+            color: var(--white);
+            letter-spacing: 12px;
+            margin-bottom: 40px;
+            opacity: 0.8;
+        }
+
+        .card {
+            background: rgba(5, 10, 20, 0.75);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            border-radius: 16px;
+            padding: 40px 48px;
+            backdrop-filter: blur(20px);
+            max-width: 440px;
+            margin: 0 auto;
+        }
+
+        .card-icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 20px;
+            background: rgba(0, 212, 255, 0.08);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-icon svg {
+            width: 32px;
+            height: 32px;
+            fill: var(--blue);
+            opacity: 0.7;
+        }
+
+        .card h2 {
+            font-family: var(--font-head);
+            font-size: 24px;
+            color: var(--white);
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .card p {
+            font-size: 13px;
+            color: var(--gray);
+            line-height: 1.7;
+            margin-bottom: 28px;
+        }
+
+        .unavailable-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.25);
+            border-radius: 8px;
+            padding: 12px 24px;
+            margin-bottom: 24px;
+        }
+
+        .unavailable-badge .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff4444;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .unavailable-badge span {
+            font-size: 12px;
+            font-weight: 700;
+            color: #ff6666;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 212, 255, 0.08);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            padding: 14px 32px;
+            color: rgba(0, 212, 255, 0.3);
+            font-family: var(--font-body);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: not-allowed;
+            text-decoration: none;
+            pointer-events: none;
+            transition: 0.3s;
+        }
+
+        .download-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: rgba(0, 212, 255, 0.3);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 24px;
+            color: var(--gray);
+            text-decoration: none;
+            font-size: 11px;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            opacity: 0.5;
+        }
+
+        .back-link:hover {
+            color: var(--blue);
+            opacity: 1;
+        }
+
+        .version {
+            position: fixed;
+            bottom: 20px;
+            right: 24px;
+            font-size: 9px;
+            color: rgba(0, 212, 255, 0.2);
+            letter-spacing: 1px;
+            z-index: 10;
+        }
+    </style>
+    <script>
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || e.keyCode === 123) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); return false; }
+        });
+        document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
+    </script>
+</head>
+<body>
+
+    <div class="scanlines"></div>
+
+    <nav style="position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:rgba(0,0,0,0.7);backdrop-filter:blur(12px);border-bottom:1px solid rgba(0,212,255,0.12);">
+        <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;color:#8899aa;text-decoration:none;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;transition:0.3s;padding:6px 14px;border:1px solid rgba(0,212,255,0.15);border-radius:4px;" onmouseover="this.style.color='#00d4ff';this.style.borderColor='#00d4ff'" onmouseout="this.style.color='#8899aa';this.style.borderColor='rgba(0,212,255,0.15)'">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            HOME
+        </a>
+        <span style="font-family:'Orbitron',sans-serif;font-size:9px;color:rgba(0,212,255,0.25);letter-spacing:2px;">METRO CITY RP</span>
+    </nav>
+
+    <div class="bg">
+        <img src="images/launcher.png" alt="">
+    </div>
+
+    <div class="content">
+        <img src="images/logo-transparent.png" alt="Metro City" class="logo">
+        <h1 class="title">METRO CITY</h1>
+        <p class="subtitle">LAUNCHER</p>
+
+        <div class="card">
+            <div class="card-icon">
+                <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+            </div>
+            <h2>LAUNCHER</h2>
+            <p>თამაშის დასაწყებად ჩამოტვირთე ლაუნჩერი</p>
+
+            <div class="unavailable-badge">
+                <span class="dot"></span>
+                <span>ლაუნჩერი ჯერ ხელმისაწვდომი არარის</span>
+            </div>
+
+            <br>
+
+            <a class="download-btn" title="მალე ხელმისაწვდომი იქნება">
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                ჩამოტვირთა
+            </a>
+
+            <br>
+            <a href="index.html" class="back-link">← მთავარ გვერდზე დაბრუნება</a>
+        </div>
+    </div>
+
+    <span class="version">v1.0.0</span>
+
+</body>
+</html>

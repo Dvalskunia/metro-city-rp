@@ -242,18 +242,23 @@ function buildReactionRoleEmbed() {
 
 async function setupReactionRoles(guild) {
   try {
+    console.log('[🔍 REACTION ROLES] ვცდილობ არხის პოვნას: ' + REACTION_ROLES_CHANNEL);
     const channel = await guild.channels.fetch(REACTION_ROLES_CHANNEL);
     if (!channel) {
       console.error('[❌ REACTION ROLES] არხი ვერ მოიძებნა: ' + REACTION_ROLES_CHANNEL);
       return;
     }
+    console.log('[✅ REACTION ROLES] არხი ნაპოვნია: ' + channel.name + ' | type: ' + channel.type);
 
-    const botPerms = channel.permissionsFor(guild.members.me);
-    if (!botPerms || !botPerms.has(PermissionsBitField.Flags.SendMessages) || !botPerms.has(PermissionsBitField.Flags.AddReactions)) {
-      console.error('[❌ REACTION ROLES] არასაკმარისი წვდომა არხზე: ' + channel.name);
-      return;
-    }
+    const botMember = await guild.members.fetch(discordBot.user.id);
+    const perms = channel.permissionsFor(botMember);
+    console.log('[🔍 REACTION ROLES] Bot permissions: ' + JSON.stringify({
+      ViewChannel: perms?.has('ViewChannel'),
+      SendMessages: perms?.has('SendMessages'),
+      AddReactions: perms?.has('AddReactions'),
+    }));
 
+    console.log('[🔍 REACTION ROLES] ვცდილობ მესიჯების წამოღებას...');
     const messages = await channel.messages.fetch({ limit: 50 });
     const existing = messages.find(m => m.author.id === discordBot.user.id && m.embeds.length > 0 && m.embeds[0].title && m.embeds[0].title.includes('Role'));
 
@@ -262,6 +267,7 @@ async function setupReactionRoles(guild) {
       return;
     }
 
+    console.log('[🔍 REACTION ROLES] ვცდილობ მესიჯის გაგზავნას...');
     const embed = buildReactionRoleEmbed();
     const msg = await channel.send({ embeds: [embed] });
 
@@ -271,7 +277,8 @@ async function setupReactionRoles(guild) {
 
     console.log('[✅ REACTION ROLES] შეტყობინება გაიგზავნა #' + channel.name);
   } catch (e) {
-    console.error('[❌ REACTION ROLES]', e.message);
+    console.error('[❌ REACTION ROLES] Error: ' + e.message);
+    console.error('[❌ REACTION ROLES] Stack: ' + e.stack);
   }
 }
 

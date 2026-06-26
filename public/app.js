@@ -40,7 +40,8 @@ function updateUI(data) {
     document.getElementById('playersMaxBig').textContent = max;
 
     // Mini stats
-    document.getElementById('serverPing2').textContent = data.ping ? data.ping + ' ms' : '-- ms';
+    const avgPing = data.avgPing || 0;
+    document.getElementById('serverPing2').textContent = avgPing > 0 ? avgPing + ' ms' : '-- ms';
     document.getElementById('peakPlayers2').textContent = data.peakPlayers || '--';
     document.getElementById('serverMap2').textContent = data.map || 'N/A';
 
@@ -51,9 +52,10 @@ function updateUI(data) {
     // Players list
     const list = document.getElementById('playersList2');
     if (data.players && data.players.length > 0) {
-        list.innerHTML = data.players.map(p =>
-            '<span class="player-tag">' + esc(p) + '</span>'
-        ).join('');
+        list.innerHTML = data.players.map((p, i) => {
+            const ping = data.playerPings && data.playerPings[i] ? ' <span class="player-ping">[' + data.playerPings[i] + ']</span>' : '';
+            return '<span class="player-tag">' + esc(p) + ping + '</span>';
+        }).join('');
     } else {
         list.innerHTML = '<div class="players-empty">სერვერზე ამჟამად არავინ არის</div>';
     }

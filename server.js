@@ -51,9 +51,17 @@ function queryServer() {
         const cur = res.online || 0;
         const max = res.maxplayers || 0;
         if (cur > peakPlayers) peakPlayers = cur;
+
+        const players = res.players || [];
+        const avgPing = players.length > 0
+          ? Math.round(players.reduce((sum, p) => sum + (p.ping || 0), 0) / players.length)
+          : 0;
+
         resolve({
           status: 'online', hostname: res.hostname || 'Metro City RP',
-          players: (res.players || []).map(p => p.name),
+          players: players.map(p => p.name),
+          playerPings: players.map(p => p.ping || 0),
+          avgPing,
           maxPlayers: max, currentPlayers: cur, peakPlayers, ping,
           map: res.mapname || 'N/A', gamemode: res.gamemode || 'N/A',
           time: new Date().toLocaleString('ka-GE', { timeZone: 'Asia/Tbilisi' }),
@@ -80,7 +88,10 @@ const embedColor = (ratio) => {
 
 const formatPlayers = (players) => {
   if (!players || players.length === 0) return null;
-  return players.slice(0, 20).map((p, i) => '`' + String(i + 1).padStart(2, '0') + '.` ' + p.name).join('\n');
+  return players.slice(0, 20).map((p, i) => {
+    const pingStr = p.ping ? ' `[' + p.ping + ']`' : '';
+    return '`' + String(i + 1).padStart(2, '0') + '.` ' + p.name + pingStr;
+  }).join('\n');
 };
 
 const now = () => new Date().toLocaleString('ka-GE', { timeZone: 'Asia/Tbilisi' });
@@ -103,7 +114,7 @@ const getBgPath = () => {
   return null;
 };
 
-const buildOnline = async (r, ping) => {
+const buildOnline = async (r, queryPing) => {
   const cur = r.online || 0;
   const max = r.maxplayers || 0;
   const ratio = max ? cur / max : 0;
@@ -125,8 +136,11 @@ const buildOnline = async (r, ping) => {
   if (CURRENT_EVENT) desc.push('> **⭐ აქცია:** `' + CURRENT_EVENT + '`');
   desc.push('', '━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
+  const avgPing = r.avgPing || 0;
+  const pingDisplay = cur > 0 ? avgPing + 'ms' : queryPing + 'ms';
+
   const fields = [
-    { name: '📡 პინგი', value: '`' + ping + 'ms`', inline: true },
+    { name: '📡 პინგი', value: '`' + pingDisplay + '`', inline: true },
     { name: '🗺️ რუკა', value: '`' + (r.mapname || 'N/A') + '`', inline: true },
     { name: '⏰ დრო', value: '`' + now() + '`', inline: true },
   ];
@@ -189,13 +203,19 @@ const queryAndSend = async () => {
   try {
     const start = Date.now();
     query({ host: SAMP_HOST, port: SAMP_PORT, timeout: 5000 }, async (err, res) => {
-      const ping = Date.now() - start;
+      const queryPing = Date.now() - start;
       if (err) {
         console.log('[⚠️ OFFLINE]', err.message || err);
         await sendToDiscord(await buildOffline());
       } else {
-        console.log('[📊 ONLINE] ' + (res.online || 0) + '/' + (res.maxplayers || 0) + ' | ' + (res.mapname || 'N/A') + ' | ' + ping + 'ms');
-        await sendToDiscord(await buildOnline(res, ping));
+        const cur = res.online || 0;
+        const players = res.players || [];
+        const avgPing = players.length > 0
+          ? Math.round(players.reduce((sum, p) => sum + (p.ping || 0), 0) / players.length)
+          : 0;
+        console.log('[📊 ONLINE] ' + cur + '/' + (res.maxplayers || 0) + ' | ' + (res.mapname || 'N/A') + ' | query: ' + queryPing + 'ms | avg: ' + avgPing + 'ms');
+        const enriched = { ...res, avgPing };
+        await sendToDiscord(await buildOnline(enriched, queryPing));
       }
     });
   } catch (e) {

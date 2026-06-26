@@ -236,22 +236,56 @@ function buildReactionRoleEmbed() {
 
 async function setupReactionRoles(guild) {
   try {
-    console.log('[🔍 REACTION ROLES] Fetching channel: ' + REACTION_ROLES_CHANNEL);
+    console.log('[🔍 REACTION ROLES] Setting up for guild: ' + guild.name);
+
+    const botMember = await guild.members.fetch(discordBot.user.id);
+    const botRole = botMember.roles.highest;
+    const botPerms = botMember.permissions;
+
+    console.log('[🔍 REACTION ROLES] Bot Manage Roles: ' + botPerms.has('ManageRoles'));
+
+    let playerRole = guild.roles.cache.find(r => r.name === 'Player');
+    if (!playerRole) {
+      console.log('[🔧 REACTION ROLES] Creating Player role...');
+      playerRole = await guild.roles.create({
+        name: 'Player',
+        color: 0x00d4ff,
+        reason: 'Auto-created by MCRP BOT for reaction roles',
+      });
+      console.log('[✅ REACTION ROLES] Player role created');
+    }
+
+    if (botPerms.has('ManageRoles') && playerRole.position >= botRole.position) {
+      console.log('[🔧 REACTION ROLES] Moving bot role above Player...');
+      try {
+        await botRole.setPosition(playerRole.position + 1);
+        console.log('[✅ REACTION ROLES] Bot role positioned above Player');
+      } catch (e) {
+        console.error('[⚠️ REACTION ROLES] Could not move bot role: ' + e.message);
+        console.error('[💡] Manually move MCRP BOT role ABOVE Player in Server Settings > Roles');
+      }
+    }
+
     const channel = await guild.channels.fetch(REACTION_ROLES_CHANNEL);
     if (!channel) {
       console.error('[❌ REACTION ROLES] Channel not found: ' + REACTION_ROLES_CHANNEL);
       return;
     }
-    console.log('[✅ REACTION ROLES] Channel found: ' + channel.name + ' | type: ' + channel.type);
+    console.log('[✅ REACTION ROLES] Channel: ' + channel.name);
 
-    const botMember = await guild.members.fetch(discordBot.user.id);
-    const perms = channel.permissionsFor(botMember);
-    console.log('[🔍 REACTION ROLES] Bot permissions: ' + JSON.stringify({
-      ViewChannel: perms?.has('ViewChannel'),
-      SendMessages: perms?.has('SendMessages'),
-      EmbedLinks: perms?.has('EmbedLinks'),
-      AddReactions: perms?.has('AddReactions'),
-    }));
+    try {
+      await channel.permissionOverwrites.edit(guild.roles.everyone, { ViewChannel: true });
+      await channel.permissionOverwrites.edit(playerRole.id, { ViewChannel: false });
+      await channel.permissionOverwrites.edit(discordBot.user.id, {
+        ViewChannel: true,
+        SendMessages: true,
+        EmbedLinks: true,
+        AddReactions: true,
+      });
+      console.log('[✅ REACTION ROLES] Channel permissions set');
+    } catch (e) {
+      console.error('[⚠️ REACTION ROLES] Could not set channel permissions: ' + e.message);
+    }
 
     console.log('[🔍 REACTION ROLES] Fetching messages...');
     const messages = await channel.messages.fetch({ limit: 50 });
@@ -270,7 +304,7 @@ async function setupReactionRoles(guild) {
       await msg.react(emoji);
     }
 
-    console.log('[✅ REACTION ROLES] Message sent to #' + channel.name);
+    console.log('[✅ REACTION ROLES] Done! Message sent to #' + channel.name);
   } catch (e) {
     console.error('[❌ REACTION ROLES] Error: ' + e.message);
     console.error('[❌ REACTION ROLES] Stack: ' + e.stack);
@@ -294,12 +328,21 @@ async function handleReactionAdd(reaction, user) {
       return;
     }
 
+    const botMember = await guild.members.fetch(discordBot.user.id);
+    if (role.position >= botMember.roles.highest.position) {
+      console.error('[❌ REACTION ROLES] Bot role is too low! Move MCRP BOT above ' + roleName + ' in role hierarchy');
+      return;
+    }
+
     if (!member.roles.cache.has(role.id)) {
       await member.roles.add(role);
       console.log('[✅ REACTION ROLES] ' + user.tag + ' <- ' + roleName);
     }
   } catch (e) {
-    console.error('[❌ REACTION ROLES] role add:', e.message);
+    console.error('[❌ REACTION ROLES] role add: ' + e.message);
+    if (e.message.includes('Missing Permissions')) {
+      console.error('[💡] Bot needs Manage Roles permission and must be higher than Player role');
+    }
   }
 }
 

@@ -13,7 +13,6 @@
             --blue: #00d4ff;
             --blue-dark: #0088cc;
             --blue-glow: rgba(0, 212, 255, 0.4);
-            --blue-deep: rgba(0, 212, 255, 0.08);
             --black: #000000;
             --dark: #050a12;
             --white: #ffffff;
@@ -39,7 +38,6 @@
             position: relative;
         }
 
-        /* ── Background ── */
         .bg {
             position: absolute;
             inset: 0;
@@ -50,14 +48,9 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            filter: blur(14px) brightness(0.25) saturate(1.5);
-            transform: scale(1.2);
-            animation: bgPulse 20s ease-in-out infinite alternate;
-        }
-
-        @keyframes bgPulse {
-            0% { transform: scale(1.2) brightness(0.25); }
-            100% { transform: scale(1.25) brightness(0.3); }
+            filter: blur(12px) brightness(0.25) saturate(1.3);
+            transform: scale(1.15);
+            will-change: transform;
         }
 
         .bg::after {
@@ -67,7 +60,6 @@
             background: radial-gradient(ellipse at 50% 40%, rgba(0,212,255,0.06) 0%, rgba(0,0,0,0.7) 60%, rgba(0,0,0,0.95) 100%);
         }
 
-        /* ── Particles ── */
         .particles {
             position: absolute;
             inset: 0;
@@ -83,17 +75,17 @@
             background: var(--blue);
             border-radius: 50%;
             opacity: 0;
+            will-change: transform, opacity;
             animation: particleFloat linear infinite;
         }
 
         @keyframes particleFloat {
-            0% { opacity: 0; transform: translateY(100vh) scale(0); }
-            10% { opacity: 0.6; }
-            90% { opacity: 0.6; }
-            100% { opacity: 0; transform: translateY(-10vh) scale(1); }
+            0% { opacity: 0; transform: translateY(100vh); }
+            10% { opacity: 0.5; }
+            90% { opacity: 0.5; }
+            100% { opacity: 0; transform: translateY(-10vh); }
         }
 
-        /* ── Scanlines ── */
         .scanlines {
             position: fixed;
             inset: 0;
@@ -108,39 +100,19 @@
             );
         }
 
-        /* ── Grid Lines (Background) ── */
-        .grid-lines {
-            position: absolute;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
-            background-image:
-                linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-            animation: gridMove 30s linear infinite;
-        }
-
-        @keyframes gridMove {
-            0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
-            100% { transform: perspective(500px) rotateX(60deg) translateY(60px); }
-        }
-
-        /* ── Content ── */
         .content {
             position: relative;
             z-index: 10;
             text-align: center;
-            animation: fadeUp 1s ease-out;
+            animation: fadeUp 0.8s ease-out;
             padding: 20px;
         }
 
         @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(40px); }
+            from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Logo ── */
         .logo-wrapper {
             position: relative;
             display: inline-block;
@@ -149,10 +121,11 @@
 
         .logo {
             width: 130px;
-            filter: drop-shadow(0 0 30px var(--blue-glow)) drop-shadow(0 0 60px rgba(0,212,255,0.2));
+            filter: drop-shadow(0 0 25px var(--blue-glow));
             animation: float 5s ease-in-out infinite;
             position: relative;
             z-index: 2;
+            will-change: transform;
         }
 
         .logo-ring {
@@ -165,6 +138,7 @@
             border: 1px solid rgba(0,212,255,0.15);
             border-radius: 50%;
             animation: ringPulse 3s ease-in-out infinite;
+            will-change: transform, opacity;
         }
 
         .logo-ring:nth-child(2) {
@@ -176,31 +150,21 @@
 
         @keyframes ringPulse {
             0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
-            50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.05); }
+            50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.03); }
         }
 
         @keyframes float {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-12px); }
+            50% { transform: translateY(-10px); }
         }
 
-        /* ── Title ── */
         .title {
             font-family: var(--font-gta);
             font-size: clamp(2.2rem, 6vw, 4rem);
             color: var(--blue);
-            text-shadow:
-                0 0 20px var(--blue-glow),
-                0 0 40px rgba(0,212,255,0.2),
-                3px 3px 0 #003366;
+            text-shadow: 0 0 20px var(--blue-glow), 3px 3px 0 #003366;
             margin-bottom: 4px;
             letter-spacing: 4px;
-            animation: titleGlow 3s ease-in-out infinite alternate;
-        }
-
-        @keyframes titleGlow {
-            0% { text-shadow: 0 0 20px var(--blue-glow), 0 0 40px rgba(0,212,255,0.2), 3px 3px 0 #003366; }
-            100% { text-shadow: 0 0 30px var(--blue-glow), 0 0 60px rgba(0,212,255,0.3), 3px 3px 0 #003366; }
         }
 
         .subtitle {
@@ -212,14 +176,12 @@
             text-transform: uppercase;
         }
 
-        /* ── Main Card ── */
         .card {
             position: relative;
-            background: rgba(5, 10, 20, 0.8);
+            background: rgba(5, 10, 20, 0.85);
             border: 1px solid rgba(0, 212, 255, 0.12);
             border-radius: 20px;
             padding: 48px 52px;
-            backdrop-filter: blur(24px);
             max-width: 480px;
             margin: 0 auto;
             overflow: hidden;
@@ -235,32 +197,8 @@
             border-radius: 20px;
             background: linear-gradient(135deg, rgba(0,212,255,0.2), transparent 40%, transparent 60%, rgba(0,212,255,0.1));
             z-index: -1;
-            animation: borderGlow 4s ease-in-out infinite alternate;
         }
 
-        @keyframes borderGlow {
-            0% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        .card::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0,212,255,0.03), transparent);
-            animation: cardShine 6s ease-in-out infinite;
-        }
-
-        @keyframes cardShine {
-            0% { left: -100%; }
-            50% { left: 100%; }
-            100% { left: 100%; }
-        }
-
-        /* ── Card Icon ── */
         .card-icon {
             width: 80px;
             height: 80px;
@@ -272,12 +210,6 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            animation: iconPulse 3s ease-in-out infinite;
-        }
-
-        @keyframes iconPulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,255,0.1); }
-            50% { box-shadow: 0 0 0 15px rgba(0,212,255,0); }
         }
 
         .card-icon svg {
@@ -294,6 +226,7 @@
             border-radius: 50%;
             border: 1px dashed rgba(0,212,255,0.15);
             animation: spin 20s linear infinite;
+            will-change: transform;
         }
 
         @keyframes spin {
@@ -301,7 +234,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* ── Card Text ── */
         .card h2 {
             font-family: var(--font-head);
             font-size: 28px;
@@ -317,7 +249,6 @@
             margin-bottom: 32px;
         }
 
-        /* ── Unavailable Badge ── */
         .unavailable-badge {
             display: inline-flex;
             align-items: center;
@@ -327,24 +258,6 @@
             border-radius: 10px;
             padding: 14px 28px;
             margin-bottom: 28px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .unavailable-badge::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,68,68,0.05), transparent);
-            animation: badgeShine 3s ease-in-out infinite;
-        }
-
-        @keyframes badgeShine {
-            0% { left: -100%; }
-            100% { left: 100%; }
         }
 
         .unavailable-badge .dot {
@@ -369,7 +282,6 @@
             text-transform: uppercase;
         }
 
-        /* ── Download Button ── */
         .download-btn {
             display: inline-flex;
             align-items: center;
@@ -387,9 +299,6 @@
             cursor: not-allowed;
             text-decoration: none;
             pointer-events: none;
-            transition: 0.3s;
-            position: relative;
-            overflow: hidden;
         }
 
         .download-btn svg {
@@ -398,7 +307,6 @@
             fill: rgba(0, 212, 255, 0.25);
         }
 
-        /* ── Features Row ── */
         .features {
             display: flex;
             gap: 16px;
@@ -422,7 +330,6 @@
             fill: rgba(0,212,255,0.3);
         }
 
-        /* ── Back Link ── */
         .back-link {
             display: inline-flex;
             align-items: center;
@@ -451,7 +358,6 @@
             fill: currentColor;
         }
 
-        /* ── Nav ── */
         nav {
             position: fixed;
             top: 0;
@@ -462,8 +368,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 14px 28px;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(16px);
+            background: rgba(0,0,0,0.7);
             border-bottom: 1px solid rgba(0,212,255,0.08);
         }
 
@@ -487,7 +392,6 @@
         .nav-home:hover {
             color: var(--blue);
             border-color: var(--blue);
-            box-shadow: 0 0 15px rgba(0,212,255,0.1);
         }
 
         .nav-home svg {
@@ -504,7 +408,6 @@
             text-transform: uppercase;
         }
 
-        /* ── Bottom Bar ── */
         .bottom-bar {
             position: fixed;
             bottom: 0;
@@ -515,8 +418,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 12px 28px;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(12px);
+            background: rgba(0,0,0,0.6);
             border-top: 1px solid rgba(0,212,255,0.06);
         }
 
@@ -543,7 +445,6 @@
             letter-spacing: 1px;
         }
 
-        /* ── Corner Decorations ── */
         .corner {
             position: fixed;
             width: 40px;
@@ -557,7 +458,6 @@
         .corner-bl { bottom: 50px; left: 20px; border-bottom: 1px solid rgba(0,212,255,0.15); border-left: 1px solid rgba(0,212,255,0.15); }
         .corner-br { bottom: 50px; right: 20px; border-bottom: 1px solid rgba(0,212,255,0.15); border-right: 1px solid rgba(0,212,255,0.15); }
 
-        /* ── Responsive ── */
         @media (max-width: 600px) {
             .card { padding: 36px 28px; }
             .features { gap: 10px; }
@@ -583,13 +483,11 @@
 
     <div class="scanlines"></div>
 
-    <!-- Corner Decorations -->
     <div class="corner corner-tl"></div>
     <div class="corner corner-tr"></div>
     <div class="corner corner-bl"></div>
     <div class="corner corner-br"></div>
 
-    <!-- Nav -->
     <nav>
         <a href="index.html" class="nav-home">
             <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -598,18 +496,12 @@
         <span class="nav-brand">METRO CITY RP</span>
     </nav>
 
-    <!-- Background -->
     <div class="bg">
         <img src="images/launcher.png" alt="">
     </div>
 
-    <!-- Grid -->
-    <div class="grid-lines"></div>
-
-    <!-- Particles -->
     <div class="particles" id="particles"></div>
 
-    <!-- Content -->
     <div class="content">
         <div class="logo-wrapper">
             <div class="logo-ring"></div>
@@ -661,7 +553,6 @@
         </div>
     </div>
 
-    <!-- Bottom Bar -->
     <div class="bottom-bar">
         <div class="status-indicator">
             <span class="dot"></span>
@@ -671,15 +562,14 @@
     </div>
 
     <script>
-        // Generate particles
         const container = document.getElementById('particles');
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 12; i++) {
             const p = document.createElement('div');
             p.className = 'particle';
             p.style.left = Math.random() * 100 + '%';
-            p.style.animationDuration = (8 + Math.random() * 12) + 's';
-            p.style.animationDelay = Math.random() * 10 + 's';
-            p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+            p.style.animationDuration = (10 + Math.random() * 15) + 's';
+            p.style.animationDelay = Math.random() * 8 + 's';
+            p.style.width = p.style.height = '2px';
             container.appendChild(p);
         }
     </script>

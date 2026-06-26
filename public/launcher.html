@@ -7,26 +7,21 @@
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bungee+Shade&family=Permanent+Marker&family=Bebas+Neue&family=Russo+One&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Bebas+Neue&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --blue: #00d4ff;
-            --blue-dark: #0088cc;
             --blue-glow: rgba(0, 212, 255, 0.4);
-            --black: #000000;
-            --dark: #050a12;
-            --white: #ffffff;
+            --black: #000;
+            --white: #fff;
             --gray: #8899aa;
             --red: #ff4444;
-            --font-gta: 'Permanent Marker', cursive;
-            --font-head: 'Bebas Neue', sans-serif;
-            --font-body: 'Orbitron', sans-serif;
         }
 
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: var(--font-body);
+            font-family: 'Orbitron', sans-serif;
             background: var(--black);
             color: var(--white);
             min-height: 100vh;
@@ -35,7 +30,6 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            position: relative;
         }
 
         .bg {
@@ -48,314 +42,15 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            filter: blur(12px) brightness(0.25) saturate(1.3);
-            transform: scale(1.15);
-            will-change: transform;
+            filter: blur(10px) brightness(0.25);
+            transform: scale(1.1);
         }
 
         .bg::after {
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(ellipse at 50% 40%, rgba(0,212,255,0.06) 0%, rgba(0,0,0,0.7) 60%, rgba(0,0,0,0.95) 100%);
-        }
-
-        .particles {
-            position: absolute;
-            inset: 0;
-            z-index: 1;
-            overflow: hidden;
-            pointer-events: none;
-        }
-
-        .particle {
-            position: absolute;
-            width: 2px;
-            height: 2px;
-            background: var(--blue);
-            border-radius: 50%;
-            opacity: 0;
-            will-change: transform, opacity;
-            animation: particleFloat linear infinite;
-        }
-
-        @keyframes particleFloat {
-            0% { opacity: 0; transform: translateY(100vh); }
-            10% { opacity: 0.5; }
-            90% { opacity: 0.5; }
-            100% { opacity: 0; transform: translateY(-10vh); }
-        }
-
-        .scanlines {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 9999;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0, 212, 255, 0.012) 2px,
-                rgba(0, 212, 255, 0.012) 4px
-            );
-        }
-
-        .content {
-            position: relative;
-            z-index: 10;
-            text-align: center;
-            animation: fadeUp 0.8s ease-out;
-            padding: 20px;
-        }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .logo-wrapper {
-            position: relative;
-            display: inline-block;
-            margin-bottom: 20px;
-        }
-
-        .logo {
-            width: 130px;
-            filter: drop-shadow(0 0 25px var(--blue-glow));
-            animation: float 5s ease-in-out infinite;
-            position: relative;
-            z-index: 2;
-            will-change: transform;
-        }
-
-        .logo-ring {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 180px;
-            height: 180px;
-            border: 1px solid rgba(0,212,255,0.15);
-            border-radius: 50%;
-            animation: ringPulse 3s ease-in-out infinite;
-            will-change: transform, opacity;
-        }
-
-        .logo-ring:nth-child(2) {
-            width: 220px;
-            height: 220px;
-            border-color: rgba(0,212,255,0.08);
-            animation-delay: 0.5s;
-        }
-
-        @keyframes ringPulse {
-            0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
-            50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.03); }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .title {
-            font-family: var(--font-gta);
-            font-size: clamp(2.2rem, 6vw, 4rem);
-            color: var(--blue);
-            text-shadow: 0 0 20px var(--blue-glow), 3px 3px 0 #003366;
-            margin-bottom: 4px;
-            letter-spacing: 4px;
-        }
-
-        .subtitle {
-            font-family: var(--font-head);
-            font-size: clamp(1.2rem, 3vw, 1.8rem);
-            color: rgba(255,255,255,0.6);
-            letter-spacing: 16px;
-            margin-bottom: 50px;
-            text-transform: uppercase;
-        }
-
-        .card {
-            position: relative;
-            background: rgba(5, 10, 20, 0.85);
-            border: 1px solid rgba(0, 212, 255, 0.12);
-            border-radius: 20px;
-            padding: 48px 52px;
-            max-width: 480px;
-            margin: 0 auto;
-            overflow: hidden;
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: -1px;
-            left: -1px;
-            right: -1px;
-            bottom: -1px;
-            border-radius: 20px;
-            background: linear-gradient(135deg, rgba(0,212,255,0.2), transparent 40%, transparent 60%, rgba(0,212,255,0.1));
-            z-index: -1;
-        }
-
-        .card-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 24px;
-            background: rgba(0, 212, 255, 0.06);
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .card-icon svg {
-            width: 34px;
-            height: 34px;
-            fill: var(--blue);
-            opacity: 0.8;
-        }
-
-        .card-icon::after {
-            content: '';
-            position: absolute;
-            inset: -3px;
-            border-radius: 50%;
-            border: 1px dashed rgba(0,212,255,0.15);
-            animation: spin 20s linear infinite;
-            will-change: transform;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .card h2 {
-            font-family: var(--font-head);
-            font-size: 28px;
-            color: var(--white);
-            letter-spacing: 3px;
-            margin-bottom: 10px;
-        }
-
-        .card-desc {
-            font-size: 13px;
-            color: var(--gray);
-            line-height: 1.8;
-            margin-bottom: 32px;
-        }
-
-        .unavailable-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255, 68, 68, 0.08);
-            border: 1px solid rgba(255, 68, 68, 0.2);
-            border-radius: 10px;
-            padding: 14px 28px;
-            margin-bottom: 28px;
-        }
-
-        .unavailable-badge .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--red);
-            animation: pulse 2s infinite;
-            box-shadow: 0 0 10px rgba(255,68,68,0.5);
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.85); }
-        }
-
-        .unavailable-badge span {
-            font-size: 11px;
-            font-weight: 700;
-            color: #ff6666;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-        }
-
-        .download-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            background: linear-gradient(135deg, rgba(0, 212, 255, 0.08), rgba(0, 212, 255, 0.03));
-            border: 1px solid rgba(0, 212, 255, 0.15);
-            border-radius: 10px;
-            padding: 16px 40px;
-            color: rgba(0, 212, 255, 0.25);
-            font-family: var(--font-body);
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            cursor: not-allowed;
-            text-decoration: none;
-            pointer-events: none;
-        }
-
-        .download-btn svg {
-            width: 18px;
-            height: 18px;
-            fill: rgba(0, 212, 255, 0.25);
-        }
-
-        .features {
-            display: flex;
-            gap: 16px;
-            margin-top: 32px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .feature {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 10px;
-            color: rgba(0,212,255,0.35);
-            letter-spacing: 1px;
-        }
-
-        .feature svg {
-            width: 14px;
-            height: 14px;
-            fill: rgba(0,212,255,0.3);
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 32px;
-            color: var(--gray);
-            text-decoration: none;
-            font-size: 11px;
-            letter-spacing: 1px;
-            transition: 0.3s;
-            opacity: 0.5;
-            padding: 8px 16px;
-            border: 1px solid transparent;
-            border-radius: 6px;
-        }
-
-        .back-link:hover {
-            color: var(--blue);
-            opacity: 1;
-            border-color: rgba(0,212,255,0.15);
-        }
-
-        .back-link svg {
-            width: 14px;
-            height: 14px;
-            fill: currentColor;
+            background: radial-gradient(ellipse at 50% 40%, rgba(0,212,255,0.05) 0%, rgba(0,0,0,0.8) 100%);
         }
 
         nav {
@@ -376,17 +71,16 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            color: #8899aa;
+            color: var(--gray);
             text-decoration: none;
-            font-family: var(--font-body);
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 2px;
             text-transform: uppercase;
-            transition: 0.3s;
             padding: 8px 16px;
             border: 1px solid rgba(0,212,255,0.12);
             border-radius: 6px;
+            transition: color 0.3s, border-color 0.3s;
         }
 
         .nav-home:hover {
@@ -394,19 +88,172 @@
             border-color: var(--blue);
         }
 
-        .nav-home svg {
-            width: 14px;
-            height: 14px;
-            fill: currentColor;
-        }
+        .nav-home svg { width: 14px; height: 14px; fill: currentColor; }
 
         .nav-brand {
-            font-family: var(--font-body);
             font-size: 8px;
             color: rgba(0,212,255,0.2);
             letter-spacing: 3px;
             text-transform: uppercase;
         }
+
+        .content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .logo {
+            width: 130px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 25px var(--blue-glow));
+        }
+
+        .title {
+            font-family: 'Permanent Marker', cursive;
+            font-size: clamp(2.2rem, 6vw, 4rem);
+            color: var(--blue);
+            text-shadow: 0 0 20px var(--blue-glow), 3px 3px 0 #003366;
+            margin-bottom: 4px;
+            letter-spacing: 4px;
+        }
+
+        .subtitle {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            color: rgba(255,255,255,0.6);
+            letter-spacing: 16px;
+            margin-bottom: 50px;
+            text-transform: uppercase;
+        }
+
+        .card {
+            background: rgba(5, 10, 20, 0.85);
+            border: 1px solid rgba(0, 212, 255, 0.12);
+            border-radius: 20px;
+            padding: 48px 52px;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .card-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: rgba(0, 212, 255, 0.06);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-icon svg { width: 34px; height: 34px; fill: var(--blue); opacity: 0.8; }
+
+        .card h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+        }
+
+        .card-desc {
+            font-size: 13px;
+            color: var(--gray);
+            line-height: 1.8;
+            margin-bottom: 32px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 68, 68, 0.08);
+            border: 1px solid rgba(255, 68, 68, 0.2);
+            border-radius: 10px;
+            padding: 14px 28px;
+            margin-bottom: 28px;
+        }
+
+        .badge-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--red);
+        }
+
+        .badge span {
+            font-size: 11px;
+            font-weight: 700;
+            color: #ff6666;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.12);
+            border-radius: 10px;
+            padding: 16px 40px;
+            color: rgba(0, 212, 255, 0.25);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            cursor: not-allowed;
+            text-decoration: none;
+            pointer-events: none;
+        }
+
+        .download-btn svg { width: 18px; height: 18px; fill: rgba(0, 212, 255, 0.25); }
+
+        .features {
+            display: flex;
+            gap: 16px;
+            margin-top: 32px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: rgba(0,212,255,0.35);
+            letter-spacing: 1px;
+        }
+
+        .feature svg { width: 14px; height: 14px; fill: rgba(0,212,255,0.3); }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 32px;
+            color: var(--gray);
+            text-decoration: none;
+            font-size: 11px;
+            letter-spacing: 1px;
+            opacity: 0.5;
+            padding: 8px 16px;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            transition: color 0.3s, opacity 0.3s, border-color 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--blue);
+            opacity: 1;
+            border-color: rgba(0,212,255,0.15);
+        }
+
+        .back-link svg { width: 14px; height: 14px; fill: currentColor; }
 
         .bottom-bar {
             position: fixed;
@@ -422,7 +269,7 @@
             border-top: 1px solid rgba(0,212,255,0.06);
         }
 
-        .status-indicator {
+        .status {
             display: flex;
             align-items: center;
             gap: 8px;
@@ -431,12 +278,11 @@
             letter-spacing: 1px;
         }
 
-        .status-indicator .dot {
+        .status-dot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
             background: var(--red);
-            animation: pulse 2s infinite;
         }
 
         .version {
@@ -445,26 +291,10 @@
             letter-spacing: 1px;
         }
 
-        .corner {
-            position: fixed;
-            width: 40px;
-            height: 40px;
-            z-index: 100;
-            pointer-events: none;
-        }
-
-        .corner-tl { top: 70px; left: 20px; border-top: 1px solid rgba(0,212,255,0.15); border-left: 1px solid rgba(0,212,255,0.15); }
-        .corner-tr { top: 70px; right: 20px; border-top: 1px solid rgba(0,212,255,0.15); border-right: 1px solid rgba(0,212,255,0.15); }
-        .corner-bl { bottom: 50px; left: 20px; border-bottom: 1px solid rgba(0,212,255,0.15); border-left: 1px solid rgba(0,212,255,0.15); }
-        .corner-br { bottom: 50px; right: 20px; border-bottom: 1px solid rgba(0,212,255,0.15); border-right: 1px solid rgba(0,212,255,0.15); }
-
         @media (max-width: 600px) {
             .card { padding: 36px 28px; }
-            .features { gap: 10px; }
             .subtitle { letter-spacing: 8px; }
             .logo { width: 100px; }
-            .logo-ring { width: 140px; height: 140px; }
-            .logo-ring:nth-child(2) { width: 170px; height: 170px; }
         }
     </style>
     <script>
@@ -481,13 +311,6 @@
 </head>
 <body>
 
-    <div class="scanlines"></div>
-
-    <div class="corner corner-tl"></div>
-    <div class="corner corner-tr"></div>
-    <div class="corner corner-bl"></div>
-    <div class="corner corner-br"></div>
-
     <nav>
         <a href="index.html" class="nav-home">
             <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -500,14 +323,8 @@
         <img src="images/launcher.png" alt="">
     </div>
 
-    <div class="particles" id="particles"></div>
-
     <div class="content">
-        <div class="logo-wrapper">
-            <div class="logo-ring"></div>
-            <div class="logo-ring"></div>
-            <img src="images/logo-transparent.png" alt="Metro City" class="logo">
-        </div>
+        <img src="images/logo-transparent.png" alt="Metro City" class="logo">
 
         <h1 class="title">METRO CITY</h1>
         <p class="subtitle">LAUNCHER</p>
@@ -519,8 +336,8 @@
             <h2>ლაუნჩერი</h2>
             <p class="card-desc">თამაშის დასაწყებად ჩამოტვირთე ლაუნჩერი.<br>სერვერზე შესვლა მარტივია.</p>
 
-            <div class="unavailable-badge">
-                <span class="dot"></span>
+            <div class="badge">
+                <span class="badge-dot"></span>
                 <span>ლაუნჩერი ჯერ ხელმისაწვდომი არარის</span>
             </div>
 
@@ -554,25 +371,12 @@
     </div>
 
     <div class="bottom-bar">
-        <div class="status-indicator">
-            <span class="dot"></span>
+        <div class="status">
+            <span class="status-dot"></span>
             <span>მიუწვდომელი</span>
         </div>
         <span class="version">v1.0.0</span>
     </div>
-
-    <script>
-        const container = document.getElementById('particles');
-        for (let i = 0; i < 12; i++) {
-            const p = document.createElement('div');
-            p.className = 'particle';
-            p.style.left = Math.random() * 100 + '%';
-            p.style.animationDuration = (10 + Math.random() * 15) + 's';
-            p.style.animationDelay = Math.random() * 8 + 's';
-            p.style.width = p.style.height = '2px';
-            container.appendChild(p);
-        }
-    </script>
 
 </body>
 </html>

@@ -635,11 +635,12 @@ function startWelcomeBot() {
 
   discordBot.on('messageCreate', async (message) => {
     if (!message.guild) return;
+    if (message.author.bot) return;
+
+    console.log('[MSG] ' + message.author.tag + ': ' + message.content.substring(0, 50));
 
     await autoModMessage(message);
-    if (message.author.bot) return;
     if (!message.content.startsWith(PREFIX)) return;
-    if (!message.guild) return;
 
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
     const cmd = args.shift().toLowerCase();

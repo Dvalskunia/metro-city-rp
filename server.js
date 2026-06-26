@@ -473,37 +473,170 @@ function startWelcomeBot() {
   discordBot.on('messageReactionRemove', handleReactionRemove);
 
   // ══════════════════════════════════════
-  //  MODERATION COMMANDS
+  //  AUTO MODERATION (24/7)
   // ══════════════════════════════════════
 
-  const PREFIX = '!';
-  const WARNINGS_FILE = path.join(__dirname, 'warnings.json');
+  const userMessages = new Map();
+  const warnedUsers = new Set();
+  const mutedUsers = new Set();
 
-  function loadWarnings() {
-    try {
-      if (fs.existsSync(WARNINGS_FILE)) return JSON.parse(fs.readFileSync(WARNINGS_FILE, 'utf8'));
-    } catch (e) {}
-    return {};
-  }
+  const SPAM_LIMIT = 5;
+  const SPAM_WINDOW = 7000;
+  const FLOOD_LIMIT = 3;
+  const FLOOD_WINDOW = 10000;
+  const CAPS_THRESHOLD = 0.7;
+  const MIN_MSG_LENGTH = 5;
+  const LINK_REGEX = /https?:\/\/[^\s]+|www\.[^\s]+|discord\.gg\/[^\s]+|discordapp\.com\/invites\/[^\s]+/gi;
+  const INVITE_REGEX = /(discord\.gg|discordapp\.com\/invites)\/[a-zA-Z0-9]+/gi;
 
-  function saveWarnings(data) {
-    fs.writeFileSync(WARNINGS_FILE, JSON.stringify(data, null, 2));
-  }
-
-  function hasMod(member) {
+  function isModerator(member) {
     return member.permissions.has('BanMembers') || member.permissions.has('KickMembers') || member.permissions.has('ModerateMembers') || member.permissions.has('ManageMessages');
   }
 
-  function modEmbed(title, desc, color) {
-    return new EmbedBuilder()
-      .setTitle(title)
-      .setDescription(desc)
-      .setColor(color || 0xe74c3c)
-      .setFooter({ text: 'Metro City RP \u2022 Moderation' })
-      .setTimestamp();
+  function getUserData(userId) {
+    if (!userMessages.has(userId)) {
+      userMessages.set(userId, { timestamps: [], lastContent: '', floodCount: 0 });
+    }
+    return userMessages.get(userId);
+  }
+
+  async function autoModMessage(message) {
+    if (!message.guild) return;
+    if (message.author.bot) return;
+    if (isModerator(message.member)) return;
+
+    const userData = getUserData(message.author.id);
+    const now = Date.now();
+    const content = message.content;
+
+    userData.timestamps.push(now);
+    userData.timestamps = userData.timestamps.filter(t => now - t < SPAM_WINDOW);
+
+    // ═══ SPAM DETECTION ═══
+    if (userData.timestamps.length >= SPAM_LIMIT) {
+      try {
+        await message.delete();
+      } catch (e) {}
+      if (!warnedUsers.has(message.author.id + '_spam')) {
+        warnedUsers.add(message.author.id + '_spam');
+        const embed = new EmbedBuilder()
+          .setTitle('\u26A0\uFE0F Spam Detected')
+          .setDescription(`<@${message.author.id}>, ნუ გაუგზავნი მესიჯებს ასე სწრაფად!`)
+          .setColor(0xf39c12)
+          .setTimestamp();
+        const warnMsg = await message.channel.send({ embeds: [embed] });
+        setTimeout(() => warnMsg.delete().catch(() => {}), 5000);
+        console.log('[AUTOMOD] SPAM warn: ' + message.author.tag);
+      } else {
+        try {
+          const member = await message.guild.members.fetch(message.author.id);
+          await member.timeout(5 * 60 * 1000, 'Auto-mute: Spam');
+          mutedUsers.add(message.author.id);
+          const embed = new EmbedBuilder()
+            .setTitle('\uD83D\uDD07 Auto-Muted')
+            .setDescription(`<@${message.author.id}> დუმილშია 5 წუთით (Spam)`)
+            .setColor(0x9b59b6)
+            .setTimestamp();
+          const muteMsg = await message.channel.send({ embeds: [embed] });
+          setTimeout(() => muteMsg.delete().catch(() => {}), 8000);
+          console.log('[AUTOMOD] SPAM mute: ' + message.author.tag);
+          warnedUsers.delete(message.author.id + '_spam');
+        } catch (e) {}
+      }
+      return;
+    }
+
+    // ═══ FLOOD DETECTION ═══
+    if (content.length > MIN_MSG_LENGTH && content === userData.lastContent) {
+      userData.floodCount++;
+    } else {
+      userData.floodCount = 0;
+    }
+    userData.lastContent = content;
+
+    if (userData.floodCount >= FLOOD_LIMIT) {
+      try {
+        await message.delete();
+      } catch (e) {}
+      userData.floodCount = 0;
+      try {
+        const member = await message.guild.members.fetch(message.author.id);
+        await member.timeout(3 * 60 * 1000, 'Auto-mute: Flood');
+        const embed = new EmbedBuilder()
+          .setTitle('\uD83D\uDD07 Auto-Muted')
+          .setDescription(`<@${message.author.id}> დუმილშია 3 წუთით (Flood - იგივე მესიჯის გამეორება)`)
+          .setColor(0x9b59b6)
+          .setTimestamp();
+        const muteMsg = await message.channel.send({ embeds: [embed] });
+        setTimeout(() => muteMsg.delete().catch(() => {}), 8000);
+        console.log('[AUTOMOD] FLOOD mute: ' + message.author.tag);
+      } catch (e) {}
+      return;
+    }
+
+    // ═══ CAPS FILTER ═══
+    const upperCount = (content.replace(/[^a-zA-Z\u10D0-\u10FA]/g, '') || '').length;
+    const lowerCount = (content.replace(/[^a-zA-Z\u10D0-\u10FA]/g, '') || '').length;
+    const totalLetters = upperCount;
+    if (totalLetters > 10) {
+      const caps = content.replace(/[^A-Z\u10D0-\u10FA]/g, '').length;
+      if (caps / totalLetters > CAPS_THRESHOLD && totalLetters > 10) {
+        try {
+          await message.delete();
+        } catch (e) {}
+        const embed = new EmbedBuilder()
+          .setTitle('\uD83D\uDEAB Caps Lock')
+          .setDescription(`<@${message.author.id}>, ნუ წერ დიდი ასოებით!`)
+          .setColor(0xe74c3c)
+          .setTimestamp();
+        const capMsg = await message.channel.send({ embeds: [embed] });
+        setTimeout(() => capMsg.delete().catch(() => {}), 5000);
+        console.log('[AUTOMOD] CAPS: ' + message.author.tag);
+        return;
+      }
+    }
+
+    // ═══ LINK/INVITE FILTER ═══
+    if (INVITE_REGEX.test(content)) {
+      try {
+        await message.delete();
+      } catch (e) {}
+      try {
+        const member = await message.guild.members.fetch(message.author.id);
+        await member.timeout(10 * 60 * 1000, 'Auto-mute: Discord invite link');
+      } catch (e) {}
+      const embed = new EmbedBuilder()
+        .setTitle('\uD83D\uDEAB Invite Blocked')
+        .setDescription(`<@${message.author.id}>, Discord invite ლინკები აკრძალულია!`)
+        .setColor(0xe74c3c)
+        .setTimestamp();
+      const invMsg = await message.channel.send({ embeds: [embed] });
+      setTimeout(() => invMsg.delete().catch(() => {}), 5000);
+      console.log('[AUTOMOD] INVITE: ' + message.author.tag);
+      return;
+    }
+
+    // ═══ EXTERNAL LINK FILTER ═══
+    if (LINK_REGEX.test(content) && !content.includes('metro-city-rp.onrender.com') && !content.includes('tezgate.com')) {
+      try {
+        await message.delete();
+      } catch (e) {}
+      const embed = new EmbedBuilder()
+        .setTitle('\uD83D\uDEAB Link Blocked')
+        .setDescription(`<@${message.author.id}>, გარე ლინკები აკრძალულია!`)
+        .setColor(0xe74c3c)
+        .setTimestamp();
+      const linkMsg = await message.channel.send({ embeds: [embed] });
+      setTimeout(() => linkMsg.delete().catch(() => {}), 5000);
+      console.log('[AUTOMOD] LINK: ' + message.author.tag);
+      return;
+    }
   }
 
   discordBot.on('messageCreate', async (message) => {
+    if (!message.guild) return;
+
+    await autoModMessage(message);
     if (message.author.bot) return;
     if (!message.content.startsWith(PREFIX)) return;
     if (!message.guild) return;

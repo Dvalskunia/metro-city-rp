@@ -3,7 +3,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const query = require('samp-query');
-const { Client, GatewayIntentBits, WebhookClient, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, WebhookClient, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const fs = require('fs');
 const https = require('https');
 
@@ -23,6 +23,7 @@ const SELF_PING_URL = process.env.SELF_PING_URL || '';
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const WELCOME_WEBHOOK_URL = process.env.WELCOME_WEBHOOK;
 const LEAVE_WEBHOOK_URL = process.env.LEAVE_WEBHOOK;
+const REACTION_ROLES_CHANNEL = process.env.REACTION_ROLES_CHANNEL || '1520182858583375892';
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -212,7 +213,119 @@ const queryAndSend = async () => {
 };
 
 // ══════════════════════════════════════
-//  WELCOME/LEAVE BOT (Discord Client)
+//  REACTION ROLES
+// ══════════════════════════════════════
+
+const REACTION_ROLES = {
+  '🎮': 'Player',
+};
+
+function buildReactionRoleEmbed() {
+  return new EmbedBuilder()
+    .setTitle('🎭 𝕽𝖔𝖑𝖊-𝕮𝖎𝖙𝖞 🎭')
+    .setDescription([
+      '```',
+      '╚═══════════════════════════════════════╝',
+      '```',
+      '',
+      'აიღეთ როლი რომ შემოგვიერთდეთ ოფიციალურ',
+      'დისქორდ სერვერზე !',
+      '',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '',
+      '🎮 — `Player`',
+    ].join('\n'))
+    .setColor(0x00d4ff)
+    .setFooter({ text: 'Metro City RP • 2026' })
+    .setTimestamp();
+}
+
+async function setupReactionRoles(guild) {
+  try {
+    const channel = await guild.channels.fetch(REACTION_ROLES_CHANNEL);
+    if (!channel) {
+      console.error('[❌ REACTION ROLES] არხი ვერ მოიძებნა: ' + REACTION_ROLES_CHANNEL);
+      return;
+    }
+
+    const botPerms = channel.permissionsFor(guild.members.me);
+    if (!botPerms || !botPerms.has(PermissionsBitField.Flags.SendMessages) || !botPerms.has(PermissionsBitField.Flags.AddReactions)) {
+      console.error('[❌ REACTION ROLES] არასაკმარისი წვდომა არხზე: ' + channel.name);
+      return;
+    }
+
+    const messages = await channel.messages.fetch({ limit: 50 });
+    const existing = messages.find(m => m.author.id === discordBot.user.id && m.embeds.length > 0 && m.embeds[0].title && m.embeds[0].title.includes('Role'));
+
+    if (existing) {
+      console.log('[✅ REACTION ROLES] შეტყობინება უკვე არსებობს: ' + existing.id);
+      return;
+    }
+
+    const embed = buildReactionRoleEmbed();
+    const msg = await channel.send({ embeds: [embed] });
+
+    for (const emoji of Object.keys(REACTION_ROLES)) {
+      await msg.react(emoji);
+    }
+
+    console.log('[✅ REACTION ROLES] შეტყობინება გაიგზავნა #' + channel.name);
+  } catch (e) {
+    console.error('[❌ REACTION ROLES]', e.message);
+  }
+}
+
+async function handleReactionAdd(reaction, user) {
+  if (user.bot) return;
+  if (reaction.message.channel.id !== REACTION_ROLES_CHANNEL) return;
+
+  const emoji = reaction.emoji.name;
+  const roleName = REACTION_ROLES[emoji];
+  if (!roleName) return;
+
+  try {
+    const guild = reaction.message.guild;
+    const member = await guild.members.fetch(user.id);
+    const role = guild.roles.cache.find(r => r.name === roleName);
+    if (!role) {
+      console.error('[❌ REACTION ROLES] როლი ვერ მოიძებნა: ' + roleName);
+      return;
+    }
+
+    if (!member.roles.cache.has(role.id)) {
+      await member.roles.add(role);
+      console.log('[✅ REACTION ROLES] ' + user.tag + ' ← ' + roleName);
+    }
+  } catch (e) {
+    console.error('[❌ REACTION ROLES] role add:', e.message);
+  }
+}
+
+async function handleReactionRemove(reaction, user) {
+  if (user.bot) return;
+  if (reaction.message.channel.id !== REACTION_ROLES_CHANNEL) return;
+
+  const emoji = reaction.emoji.name;
+  const roleName = REACTION_ROLES[emoji];
+  if (!roleName) return;
+
+  try {
+    const guild = reaction.message.guild;
+    const member = await guild.members.fetch(user.id);
+    const role = guild.roles.cache.find(r => r.name === roleName);
+    if (!role) return;
+
+    if (member.roles.cache.has(role.id)) {
+      await member.roles.remove(role);
+      console.log('[✅ REACTION ROLES] ' + user.tag + ' ✖ ' + roleName);
+    }
+  } catch (e) {
+    console.error('[❌ REACTION ROLES] role remove:', e.message);
+  }
+}
+
+// ══════════════════════════════════════
+//  DISCORD BOT (Welcome/Leave + Reaction Roles)
 // ══════════════════════════════════════
 
 const NEON_WELCOME = [0x00FFFF, 0x00D4FF, 0x00FF88, 0x00D4FF, 0x00FFFF, 0x7B68EE, 0x00D4FF];
@@ -292,7 +405,11 @@ function startWelcomeBot() {
   }
 
   discordBot = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMembers,
+      GatewayIntentBits.GuildMessageReactions,
+    ],
   });
 
   discordBot.on('guildMemberAdd', async (member) => {
@@ -309,8 +426,14 @@ function startWelcomeBot() {
     }
   });
 
-  discordBot.once('ready', () => {
-    console.log('[✅] Welcome/Leave Bot: ' + discordBot.user.tag + ' | Servers: ' + discordBot.guilds.cache.size);
+  discordBot.on('messageReactionAdd', handleReactionAdd);
+  discordBot.on('messageReactionRemove', handleReactionRemove);
+
+  discordBot.once('ready', async () => {
+    console.log('[✅] Bot: ' + discordBot.user.tag + ' | Servers: ' + discordBot.guilds.cache.size);
+    for (const [, guild] of discordBot.guilds.cache) {
+      await setupReactionRoles(guild);
+    }
   });
 
   discordBot.login(BOT_TOKEN).catch(e => {
@@ -366,6 +489,7 @@ app.listen(PORT, () => {
   console.log('  ║  Welcome:   ' + (welcomeWebhook ? '✅' : '❌') + '                          ║');
   console.log('  ║  Leave:     ' + (leaveWebhook ? '✅' : '❌') + '                          ║');
   console.log('  ║  Bot:       ' + (BOT_TOKEN ? '✅' : '❌') + '                          ║');
+  console.log('  ║  ReactRole: ' + (BOT_TOKEN ? '✅' : '❌') + '                          ║');
   console.log('  ║  Self-Ping: ' + (SELF_PING_URL ? '✅' : '❌') + '                          ║');
   console.log('  ╚═══════════════════════════════════════╝');
   console.log('');

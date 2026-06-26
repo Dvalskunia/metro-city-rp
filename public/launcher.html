@@ -13,10 +13,12 @@
             --blue: #00d4ff;
             --blue-dark: #0088cc;
             --blue-glow: rgba(0, 212, 255, 0.4);
+            --blue-deep: rgba(0, 212, 255, 0.08);
             --black: #000000;
             --dark: #050a12;
             --white: #ffffff;
             --gray: #8899aa;
+            --red: #ff4444;
             --font-gta: 'Permanent Marker', cursive;
             --font-head: 'Bebas Neue', sans-serif;
             --font-body: 'Orbitron', sans-serif;
@@ -37,6 +39,7 @@
             position: relative;
         }
 
+        /* ── Background ── */
         .bg {
             position: absolute;
             inset: 0;
@@ -47,17 +50,50 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            filter: blur(12px) brightness(0.3) saturate(1.4);
-            transform: scale(1.15);
+            filter: blur(14px) brightness(0.25) saturate(1.5);
+            transform: scale(1.2);
+            animation: bgPulse 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgPulse {
+            0% { transform: scale(1.2) brightness(0.25); }
+            100% { transform: scale(1.25) brightness(0.3); }
         }
 
         .bg::after {
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.85) 100%);
+            background: radial-gradient(ellipse at 50% 40%, rgba(0,212,255,0.06) 0%, rgba(0,0,0,0.7) 60%, rgba(0,0,0,0.95) 100%);
         }
 
+        /* ── Particles ── */
+        .particles {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--blue);
+            border-radius: 50%;
+            opacity: 0;
+            animation: particleFloat linear infinite;
+        }
+
+        @keyframes particleFloat {
+            0% { opacity: 0; transform: translateY(100vh) scale(0); }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { opacity: 0; transform: translateY(-10vh) scale(1); }
+        }
+
+        /* ── Scanlines ── */
         .scanlines {
             position: fixed;
             inset: 0;
@@ -67,179 +103,468 @@
                 0deg,
                 transparent,
                 transparent 2px,
-                rgba(0, 212, 255, 0.015) 2px,
-                rgba(0, 212, 255, 0.015) 4px
+                rgba(0, 212, 255, 0.012) 2px,
+                rgba(0, 212, 255, 0.012) 4px
             );
         }
 
+        /* ── Grid Lines (Background) ── */
+        .grid-lines {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridMove 30s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(60px); }
+        }
+
+        /* ── Content ── */
         .content {
             position: relative;
             z-index: 10;
             text-align: center;
-            animation: fadeUp 0.8s ease-out;
+            animation: fadeUp 1s ease-out;
+            padding: 20px;
         }
 
         @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(30px); }
+            from { opacity: 0; transform: translateY(40px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* ── Logo ── */
+        .logo-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
         .logo {
-            width: 140px;
-            margin-bottom: 24px;
-            filter: drop-shadow(0 0 25px var(--blue-glow));
-            animation: float 4s ease-in-out infinite;
+            width: 130px;
+            filter: drop-shadow(0 0 30px var(--blue-glow)) drop-shadow(0 0 60px rgba(0,212,255,0.2));
+            animation: float 5s ease-in-out infinite;
+            position: relative;
+            z-index: 2;
+        }
+
+        .logo-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 180px;
+            height: 180px;
+            border: 1px solid rgba(0,212,255,0.15);
+            border-radius: 50%;
+            animation: ringPulse 3s ease-in-out infinite;
+        }
+
+        .logo-ring:nth-child(2) {
+            width: 220px;
+            height: 220px;
+            border-color: rgba(0,212,255,0.08);
+            animation-delay: 0.5s;
+        }
+
+        @keyframes ringPulse {
+            0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.05); }
         }
 
         @keyframes float {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-12px); }
         }
 
+        /* ── Title ── */
         .title {
             font-family: var(--font-gta);
-            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-size: clamp(2.2rem, 6vw, 4rem);
             color: var(--blue);
-            text-shadow: 0 0 20px var(--blue-glow), 3px 3px 0 #003366;
-            margin-bottom: 8px;
-            letter-spacing: 3px;
+            text-shadow:
+                0 0 20px var(--blue-glow),
+                0 0 40px rgba(0,212,255,0.2),
+                3px 3px 0 #003366;
+            margin-bottom: 4px;
+            letter-spacing: 4px;
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            0% { text-shadow: 0 0 20px var(--blue-glow), 0 0 40px rgba(0,212,255,0.2), 3px 3px 0 #003366; }
+            100% { text-shadow: 0 0 30px var(--blue-glow), 0 0 60px rgba(0,212,255,0.3), 3px 3px 0 #003366; }
         }
 
         .subtitle {
             font-family: var(--font-head);
-            font-size: clamp(1rem, 2.5vw, 1.4rem);
-            color: var(--white);
-            letter-spacing: 12px;
-            margin-bottom: 40px;
-            opacity: 0.8;
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            color: rgba(255,255,255,0.6);
+            letter-spacing: 16px;
+            margin-bottom: 50px;
+            text-transform: uppercase;
         }
 
+        /* ── Main Card ── */
         .card {
-            background: rgba(5, 10, 20, 0.75);
-            border: 1px solid rgba(0, 212, 255, 0.15);
-            border-radius: 16px;
-            padding: 40px 48px;
-            backdrop-filter: blur(20px);
-            max-width: 440px;
+            position: relative;
+            background: rgba(5, 10, 20, 0.8);
+            border: 1px solid rgba(0, 212, 255, 0.12);
+            border-radius: 20px;
+            padding: 48px 52px;
+            backdrop-filter: blur(24px);
+            max-width: 480px;
             margin: 0 auto;
+            overflow: hidden;
         }
 
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(0,212,255,0.2), transparent 40%, transparent 60%, rgba(0,212,255,0.1));
+            z-index: -1;
+            animation: borderGlow 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes borderGlow {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0,212,255,0.03), transparent);
+            animation: cardShine 6s ease-in-out infinite;
+        }
+
+        @keyframes cardShine {
+            0% { left: -100%; }
+            50% { left: 100%; }
+            100% { left: 100%; }
+        }
+
+        /* ── Card Icon ── */
         .card-icon {
-            width: 72px;
-            height: 72px;
-            margin: 0 auto 20px;
-            background: rgba(0, 212, 255, 0.08);
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: rgba(0, 212, 255, 0.06);
             border: 1px solid rgba(0, 212, 255, 0.2);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
+            animation: iconPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes iconPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,255,0.1); }
+            50% { box-shadow: 0 0 0 15px rgba(0,212,255,0); }
         }
 
         .card-icon svg {
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             fill: var(--blue);
-            opacity: 0.7;
+            opacity: 0.8;
         }
 
+        .card-icon::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            border: 1px dashed rgba(0,212,255,0.15);
+            animation: spin 20s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* ── Card Text ── */
         .card h2 {
             font-family: var(--font-head);
-            font-size: 24px;
+            font-size: 28px;
             color: var(--white);
-            letter-spacing: 2px;
-            margin-bottom: 12px;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
         }
 
-        .card p {
+        .card-desc {
             font-size: 13px;
             color: var(--gray);
-            line-height: 1.7;
-            margin-bottom: 28px;
+            line-height: 1.8;
+            margin-bottom: 32px;
         }
 
+        /* ── Unavailable Badge ── */
         .unavailable-badge {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            background: rgba(255, 68, 68, 0.1);
-            border: 1px solid rgba(255, 68, 68, 0.25);
-            border-radius: 8px;
-            padding: 12px 24px;
-            margin-bottom: 24px;
+            gap: 10px;
+            background: rgba(255, 68, 68, 0.08);
+            border: 1px solid rgba(255, 68, 68, 0.2);
+            border-radius: 10px;
+            padding: 14px 28px;
+            margin-bottom: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .unavailable-badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,68,68,0.05), transparent);
+            animation: badgeShine 3s ease-in-out infinite;
+        }
+
+        @keyframes badgeShine {
+            0% { left: -100%; }
+            100% { left: 100%; }
         }
 
         .unavailable-badge .dot {
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            background: #ff4444;
+            background: var(--red);
             animation: pulse 2s infinite;
+            box-shadow: 0 0 10px rgba(255,68,68,0.5);
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
         }
 
         .unavailable-badge span {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             color: #ff6666;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
         }
 
+        /* ── Download Button ── */
         .download-btn {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            background: rgba(0, 212, 255, 0.08);
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            border-radius: 8px;
-            padding: 14px 32px;
-            color: rgba(0, 212, 255, 0.3);
+            gap: 12px;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.08), rgba(0, 212, 255, 0.03));
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            border-radius: 10px;
+            padding: 16px 40px;
+            color: rgba(0, 212, 255, 0.25);
             font-family: var(--font-body);
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
             text-transform: uppercase;
             cursor: not-allowed;
             text-decoration: none;
             pointer-events: none;
             transition: 0.3s;
+            position: relative;
+            overflow: hidden;
         }
 
         .download-btn svg {
-            width: 20px;
-            height: 20px;
-            fill: rgba(0, 212, 255, 0.3);
+            width: 18px;
+            height: 18px;
+            fill: rgba(0, 212, 255, 0.25);
         }
 
+        /* ── Features Row ── */
+        .features {
+            display: flex;
+            gap: 16px;
+            margin-top: 32px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: rgba(0,212,255,0.35);
+            letter-spacing: 1px;
+        }
+
+        .feature svg {
+            width: 14px;
+            height: 14px;
+            fill: rgba(0,212,255,0.3);
+        }
+
+        /* ── Back Link ── */
         .back-link {
-            display: inline-block;
-            margin-top: 24px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 32px;
             color: var(--gray);
             text-decoration: none;
             font-size: 11px;
             letter-spacing: 1px;
             transition: 0.3s;
             opacity: 0.5;
+            padding: 8px 16px;
+            border: 1px solid transparent;
+            border-radius: 6px;
         }
 
         .back-link:hover {
             color: var(--blue);
             opacity: 1;
+            border-color: rgba(0,212,255,0.15);
+        }
+
+        .back-link svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        /* ── Nav ── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 28px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(0,212,255,0.08);
+        }
+
+        .nav-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #8899aa;
+            text-decoration: none;
+            font-family: var(--font-body);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: 0.3s;
+            padding: 8px 16px;
+            border: 1px solid rgba(0,212,255,0.12);
+            border-radius: 6px;
+        }
+
+        .nav-home:hover {
+            color: var(--blue);
+            border-color: var(--blue);
+            box-shadow: 0 0 15px rgba(0,212,255,0.1);
+        }
+
+        .nav-home svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        .nav-brand {
+            font-family: var(--font-body);
+            font-size: 8px;
+            color: rgba(0,212,255,0.2);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        /* ── Bottom Bar ── */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 28px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(0,212,255,0.06);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 9px;
+            color: rgba(255,68,68,0.6);
+            letter-spacing: 1px;
+        }
+
+        .status-indicator .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--red);
+            animation: pulse 2s infinite;
         }
 
         .version {
-            position: fixed;
-            bottom: 20px;
-            right: 24px;
             font-size: 9px;
-            color: rgba(0, 212, 255, 0.2);
+            color: rgba(0,212,255,0.15);
             letter-spacing: 1px;
-            z-index: 10;
+        }
+
+        /* ── Corner Decorations ── */
+        .corner {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .corner-tl { top: 70px; left: 20px; border-top: 1px solid rgba(0,212,255,0.15); border-left: 1px solid rgba(0,212,255,0.15); }
+        .corner-tr { top: 70px; right: 20px; border-top: 1px solid rgba(0,212,255,0.15); border-right: 1px solid rgba(0,212,255,0.15); }
+        .corner-bl { bottom: 50px; left: 20px; border-bottom: 1px solid rgba(0,212,255,0.15); border-left: 1px solid rgba(0,212,255,0.15); }
+        .corner-br { bottom: 50px; right: 20px; border-bottom: 1px solid rgba(0,212,255,0.15); border-right: 1px solid rgba(0,212,255,0.15); }
+
+        /* ── Responsive ── */
+        @media (max-width: 600px) {
+            .card { padding: 36px 28px; }
+            .features { gap: 10px; }
+            .subtitle { letter-spacing: 8px; }
+            .logo { width: 100px; }
+            .logo-ring { width: 140px; height: 140px; }
+            .logo-ring:nth-child(2) { width: 170px; height: 170px; }
         }
     </style>
     <script>
@@ -258,20 +583,40 @@
 
     <div class="scanlines"></div>
 
-    <nav style="position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:rgba(0,0,0,0.7);backdrop-filter:blur(12px);border-bottom:1px solid rgba(0,212,255,0.12);">
-        <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;color:#8899aa;text-decoration:none;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;transition:0.3s;padding:6px 14px;border:1px solid rgba(0,212,255,0.15);border-radius:4px;" onmouseover="this.style.color='#00d4ff';this.style.borderColor='#00d4ff'" onmouseout="this.style.color='#8899aa';this.style.borderColor='rgba(0,212,255,0.15)'">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    <!-- Corner Decorations -->
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+
+    <!-- Nav -->
+    <nav>
+        <a href="index.html" class="nav-home">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             HOME
         </a>
-        <span style="font-family:'Orbitron',sans-serif;font-size:9px;color:rgba(0,212,255,0.25);letter-spacing:2px;">METRO CITY RP</span>
+        <span class="nav-brand">METRO CITY RP</span>
     </nav>
 
+    <!-- Background -->
     <div class="bg">
         <img src="images/launcher.png" alt="">
     </div>
 
+    <!-- Grid -->
+    <div class="grid-lines"></div>
+
+    <!-- Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Content -->
     <div class="content">
-        <img src="images/logo-transparent.png" alt="Metro City" class="logo">
+        <div class="logo-wrapper">
+            <div class="logo-ring"></div>
+            <div class="logo-ring"></div>
+            <img src="images/logo-transparent.png" alt="Metro City" class="logo">
+        </div>
+
         <h1 class="title">METRO CITY</h1>
         <p class="subtitle">LAUNCHER</p>
 
@@ -279,8 +624,8 @@
             <div class="card-icon">
                 <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
             </div>
-            <h2>LAUNCHER</h2>
-            <p>თამაშის დასაწყებად ჩამოტვირთე ლაუნჩერი</p>
+            <h2>ლაუნჩერი</h2>
+            <p class="card-desc">თამაშის დასაწყებად ჩამოტვირთე ლაუნჩერი.<br>სერვერზე შესვლა მარტივია.</p>
 
             <div class="unavailable-badge">
                 <span class="dot"></span>
@@ -294,12 +639,50 @@
                 ჩამოტვირთა
             </a>
 
-            <br>
-            <a href="index.html" class="back-link">← მთავარ გვერდზე დაბრუნება</a>
+            <div class="features">
+                <div class="feature">
+                    <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                    უსაფრთხო
+                </div>
+                <div class="feature">
+                    <svg viewBox="0 0 24 24"><path d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 1.45-.39 2.81-1.06 3.98l1.73 1C21.92 13.89 23 11.56 23 9c0-5.18-3.95-9.45-9-9.95zM12 19c-3.87 0-7-3.13-7-7 0-3.53 2.61-6.43 6-6.92V2.05c-5.06.5-9 4.76-9 9.95 0 5.52 4.47 10 9.99 10 3.31 0 6.24-1.61 8.06-4.09l-1.74-1.01C16.27 18.11 14.24 19 12 19z"/></svg>
+                    სწრაფი
+                </div>
+                <div class="feature">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    მარტივი
+                </div>
+            </div>
+
+            <a href="index.html" class="back-link">
+                <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                მთავარ გვერდზე დაბრუნება
+            </a>
         </div>
     </div>
 
-    <span class="version">v1.0.0</span>
+    <!-- Bottom Bar -->
+    <div class="bottom-bar">
+        <div class="status-indicator">
+            <span class="dot"></span>
+            <span>მიუწვდომელი</span>
+        </div>
+        <span class="version">v1.0.0</span>
+    </div>
+
+    <script>
+        // Generate particles
+        const container = document.getElementById('particles');
+        for (let i = 0; i < 30; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDuration = (8 + Math.random() * 12) + 's';
+            p.style.animationDelay = Math.random() * 10 + 's';
+            p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+            container.appendChild(p);
+        }
+    </script>
 
 </body>
 </html>

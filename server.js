@@ -5,7 +5,7 @@ const cors = require('cors');
 const query = require('samp-query');
 const { Client, GatewayIntentBits, WebhookClient, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const fs = require('fs');
-const http = require('http');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -324,7 +324,7 @@ function startWelcomeBot() {
 
 const selfPing = () => {
   if (!SELF_PING_URL) return;
-  http.get(SELF_PING_URL, (res) => {
+  https.get(SELF_PING_URL, (res) => {
     console.log('[✅ SELF-PING] ' + res.statusCode);
   }).on('error', (e) => {
     console.error('[❌ SELF-PING]', e.message);

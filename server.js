@@ -408,6 +408,56 @@ function buildWelcomeEmbed(member) {
     .setTimestamp();
 }
 
+async function generateWelcomeCard(member) {
+  try {
+    const fetch = (await import('node-fetch')).default;
+    const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 256 });
+    const avatarRes = await fetch(avatarURL);
+    const avatarBuffer = Buffer.from(await avatarRes.arrayBuffer());
+
+    const bgPath = getBgPath();
+    let bgBuffer;
+    if (bgPath) {
+      bgBuffer = await sharp(bgPath).resize(933, 280).toBuffer();
+    } else {
+      bgBuffer = await sharp({
+        create: { width: 933, height: 280, channels: 4, background: { r: 0, g: 20, b: 40, alpha: 1 } }
+      }).toBuffer();
+    }
+
+    const circleSvg = `<svg width="128" height="128"><defs><clipPath id="c"><circle cx="64" cy="64" r="64"/></clipPath></defs><image href="data:image/png;base64,${avatarBuffer.toString('base64')}" width="128" height="128" clip-path="url(#c)"/></svg>`;
+
+    const textSvg = `<svg width="933" height="280">
+      <defs>
+        <linearGradient id="overlay" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:rgb(0,0,0);stop-opacity:0.8"/>
+          <stop offset="50%" style="stop-color:rgb(0,0,0);stop-opacity:0.4"/>
+          <stop offset="100%" style="stop-color:rgb(0,0,0);stop-opacity:0"/>
+        </linearGradient>
+      </defs>
+      <rect width="933" height="280" fill="url(#overlay)"/>
+      <circle cx="100" cy="140" r="68" fill="none" stroke="#00d4ff" stroke-width="4"/>
+      <text x="190" y="110" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#ffffff">Welcome!</text>
+      <text x="190" y="155" font-family="Arial, sans-serif" font-size="24" fill="#00d4ff">${member.user.username}</text>
+      <text x="190" y="195" font-family="Arial, sans-serif" font-size="18" fill="#aaaaaa">Member #${member.guild.memberCount}</text>
+      <text x="190" y="230" font-family="Arial, sans-serif" font-size="16" fill="#666666">Metro City RP</text>
+    </svg>`;
+
+    const card = await sharp(bgBuffer)
+      .composite([
+        { input: Buffer.from(circleSvg), top: 76, left: 36, fit: 'contain' },
+        { input: Buffer.from(textSvg), top: 0, left: 0, fit: 'contain' },
+      ])
+      .png()
+      .toBuffer();
+
+    return card;
+  } catch (e) {
+    console.error('[WELCOME CARD] Error: ' + e.message);
+    return null;
+  }
+}
+
 function buildLeaveEmbed(member) {
   const memberCount = member.guild.memberCount;
   return new EmbedBuilder()
@@ -678,7 +728,27 @@ function startWelcomeBot() {
   discordBot.on('guildMemberAdd', async (member) => {
     console.log('[👋 JOIN] ' + member.user.tag + ' | ' + member.guild.name);
     if (welcomeWebhook) {
-      await neonFlash(welcomeWebhook, buildWelcomeEmbed(member), NEON_WELCOME, 'WELCOME');
+      const card = await generateWelcomeCard(member);
+      if (card) {
+        try {
+          const msg = await welcomeWebhook.send({
+            embeds: [buildWelcomeEmbed(member)],
+            files: [{ attachment: card, name: 'welcome.png' }],
+          });
+          console.log('[✅ WELCOME] Card sent ' + now());
+          for (const color of NEON_WELCOME) {
+            await sleep(400);
+            try {
+              await welcomeWebhook.editMessage(msg, { embeds: [EmbedBuilder.from(buildWelcomeEmbed(member)).setColor(color)] });
+            } catch (e) { break; }
+          }
+        } catch (e) {
+          console.error('[❌ WELCOME] ' + e.message);
+          await neonFlash(welcomeWebhook, buildWelcomeEmbed(member), NEON_WELCOME, 'WELCOME');
+        }
+      } else {
+        await neonFlash(welcomeWebhook, buildWelcomeEmbed(member), NEON_WELCOME, 'WELCOME');
+      }
     }
   });
 

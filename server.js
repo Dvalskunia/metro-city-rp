@@ -411,49 +411,67 @@ function buildWelcomeEmbed(member) {
 async function generateWelcomeCard(member) {
   try {
     const fetch = (await import('node-fetch')).default;
+    const GIFEncoder = require('gifencoder');
     const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 256 });
     const avatarRes = await fetch(avatarURL);
     const avatarBuffer = Buffer.from(await avatarRes.arrayBuffer());
 
-    const bgPath = getBgPath();
-    let bgBuffer;
-    if (bgPath) {
-      bgBuffer = await sharp(bgPath).resize(933, 280).toBuffer();
-    } else {
-      bgBuffer = await sharp({
-        create: { width: 933, height: 280, channels: 4, background: { r: 0, g: 20, b: 40, alpha: 1 } }
-      }).toBuffer();
-    }
+    const width = 933;
+    const height = 280;
+    const encoder = new GIFEncoder(width, height);
+    const chunks = [];
+    encoder.createReadStream().on('data', (chunk) => chunks.push(chunk));
+
+    encoder.start();
+    encoder.setRepeat(0);
+    encoder.setDelay(250);
+    encoder.setQuality(10);
+
+    const neonColors = [
+      { r: 0, g: 212, b: 255 },
+      { r: 0, g: 255, b: 136 },
+      { r: 123, g: 104, b: 238 },
+      { r: 0, g: 212, b: 255 },
+      { r: 0, g: 255, b: 200 },
+      { r: 100, g: 149, b: 237 },
+      { r: 0, g: 212, b: 255 },
+    ];
 
     const circleSvg = `<svg width="128" height="128"><defs><clipPath id="c"><circle cx="64" cy="64" r="64"/></clipPath></defs><image href="data:image/png;base64,${avatarBuffer.toString('base64')}" width="128" height="128" clip-path="url(#c)"/></svg>`;
+    const avatarOverlay = Buffer.from(circleSvg);
 
-    const textSvg = `<svg width="933" height="280">
-      <defs>
-        <linearGradient id="overlay" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" style="stop-color:rgb(0,0,0);stop-opacity:0.8"/>
-          <stop offset="50%" style="stop-color:rgb(0,0,0);stop-opacity:0.4"/>
-          <stop offset="100%" style="stop-color:rgb(0,0,0);stop-opacity:0"/>
-        </linearGradient>
-      </defs>
-      <rect width="933" height="280" fill="url(#overlay)"/>
-      <circle cx="100" cy="140" r="68" fill="none" stroke="#00d4ff" stroke-width="4"/>
-      <text x="190" y="110" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#ffffff">Welcome!</text>
-      <text x="190" y="155" font-family="Arial, sans-serif" font-size="24" fill="#00d4ff">${member.user.username}</text>
-      <text x="190" y="195" font-family="Arial, sans-serif" font-size="18" fill="#aaaaaa">Member #${member.guild.memberCount}</text>
-      <text x="190" y="230" font-family="Arial, sans-serif" font-size="16" fill="#666666">Metro City RP</text>
-    </svg>`;
+    for (let i = 0; i < neonColors.length; i++) {
+      const c = neonColors[i];
 
-    const card = await sharp(bgBuffer)
-      .composite([
-        { input: Buffer.from(circleSvg), top: 76, left: 36, fit: 'contain' },
-        { input: Buffer.from(textSvg), top: 0, left: 0, fit: 'contain' },
-      ])
-      .png()
-      .toBuffer();
+      const bgSvg = `<svg width="${width}" height="${height}">
+        <defs>
+          <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:rgb(${Math.floor(c.r * 0.15)},${Math.floor(c.g * 0.15)},${Math.floor(c.b * 0.15)})"/>
+            <stop offset="100%" style="stop-color:rgb(${Math.floor(c.r * 0.05)},${Math.floor(c.g * 0.05)},${Math.floor(c.b * 0.05)})"/>
+          </linearGradient>
+        </defs>
+        <rect width="${width}" height="${height}" fill="url(#g)" rx="15"/>
+        <rect x="2" y="2" width="${width - 4}" height="${height - 4}" fill="none" stroke="rgb(${c.r},${c.g},${c.b})" stroke-width="3" rx="13" opacity="0.6"/>
+        <circle cx="100" cy="140" r="68" fill="none" stroke="rgb(${c.r},${c.g},${c.b})" stroke-width="4" opacity="0.8"/>
+        <text x="190" y="105" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="#ffffff">Welcome!</text>
+        <text x="190" y="150" font-family="Arial, sans-serif" font-size="26" fill="rgb(${c.r},${c.g},${c.b})">${member.user.username}</text>
+        <text x="190" y="190" font-family="Arial, sans-serif" font-size="18" fill="#aaaaaa">Member #${member.guild.memberCount}</text>
+        <text x="190" y="225" font-family="Arial, sans-serif" font-size="16" fill="#555555">Metro City RP</text>
+      </svg>`;
 
-    return card;
+      const frame = await sharp(Buffer.from(bgSvg))
+        .composite([{ input: avatarOverlay, top: 76, left: 36, fit: 'contain' }])
+        .raw()
+        .toBuffer();
+
+      encoder.addFrame(frame);
+    }
+
+    encoder.finish();
+    const gifBuffer = Buffer.concat(chunks);
+    return gifBuffer;
   } catch (e) {
-    console.error('[WELCOME CARD] Error: ' + e.message);
+    console.error('[WELCOME CARD GIF] Error: ' + e.message);
     return null;
   }
 }
@@ -733,7 +751,7 @@ function startWelcomeBot() {
         try {
           const msg = await welcomeWebhook.send({
             embeds: [buildWelcomeEmbed(member)],
-            files: [{ attachment: card, name: 'welcome.png' }],
+            files: [{ attachment: card, name: 'welcome.gif' }],
           });
           console.log('[✅ WELCOME] Card sent ' + now());
           for (const color of NEON_WELCOME) {

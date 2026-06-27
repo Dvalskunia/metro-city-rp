@@ -441,6 +441,19 @@ async function neonFlash(webhookClient, embed, colors, label) {
   }
 }
 
+const EVENTS_FILE = path.join(__dirname, 'events.json');
+
+function loadEvents() {
+  try {
+    if (fs.existsSync(EVENTS_FILE)) return JSON.parse(fs.readFileSync(EVENTS_FILE, 'utf8'));
+  } catch (e) {}
+  return [];
+}
+
+function saveEvents(data) {
+  fs.writeFileSync(EVENTS_FILE, JSON.stringify(data, null, 2));
+}
+
 function startWelcomeBot() {
   if (!BOT_TOKEN) {
     console.log('[⚠️] DISCORD_BOT_TOKEN not set - Welcome/Leave bot disabled');
@@ -663,7 +676,7 @@ function startWelcomeBot() {
 
     // !help
     if (cmd === 'help') {
-      const embed = modEmbed('\uD83D\uDCD3 Moderation Commands', [
+      const embed = modEmbed('uD83D\uDCD3 Moderation Commands', [
         '`!ban @user [reason]` \u2014 Ban a user',
         '`!kick @user [reason]` \u2014 Kick a user',
         '`!mute @user <minutes> [reason]` \u2014 Mute (timeout) a user',
@@ -671,6 +684,18 @@ function startWelcomeBot() {
         '`!warn @user [reason]` \u2014 Warn a user',
         '`!warnings @user` \u2014 View warnings',
         '`!clear <amount>` \u2014 Delete messages',
+        '',
+        '**📋 Tickets:**',
+        '`!ticket open [reason]` \u2014 Open ticket',
+        '`!ticket close` \u2014 Close ticket',
+        '`!ticket closeall` \u2014 Close all tickets',
+        '',
+        '**📅 Events:**',
+        '`!event create <name> | <DD.MM.YYYY> | <HH:MM> | [desc]`',
+        '`!event list` \u2014 Upcoming events',
+        '`!event cancel <id>` \u2014 Cancel event',
+        '',
+        '**ℹ️ Other:**',
         '`!serverinfo` \u2014 Server info',
         '`!userinfo @user` \u2014 User info',
       ].join('\n'), 0x00d4ff);
@@ -897,6 +922,247 @@ function startWelcomeBot() {
       message.reply({ embeds: [embed] });
       return;
     }
+
+    // ══════════════════════════════════════
+    //  TICKET SYSTEM
+    // ══════════════════════════════════════
+
+    if (cmd === 'ticket') {
+      const sub = args[0] ? args[0].toLowerCase() : '';
+
+      // !ticket open [reason]
+      if (sub === 'open' || sub === '') {
+        const guild = message.guild;
+        const ticketCategory = guild.channels.cache.find(c => c.name.toLowerCase() === 'tickets' && c.type === 4);
+        const logChannel = guild.channels.cache.find(c => c.name.toLowerCase() === 'ticket-logs' || c.name.toLowerCase() === 'ticket-logs');
+
+        const existing = guild.channels.cache.find(c => c.name === 'ticket-' + message.author.id);
+        if (existing) {
+          return message.reply({ embeds: [modEmbed('⚠️ Ticket უკვე ღიაა', 'თქვენ უკვე გაქვთ ღია ticket: ' + existing.toString(), 0xf39c12)] });
+        }
+
+        let categoryId = null;
+        if (ticketCategory) {
+          categoryId = ticketCategory.id;
+        } else {
+          try {
+            const cat = await guild.channels.create({ name: 'Tickets', type: 4 });
+            categoryId = cat.id;
+          } catch (e) {}
+        }
+
+        const reason = args.slice(1).join(' ') || 'მიზეზი მითითებული არ არის';
+        try {
+          const ticketChannel = await guild.channels.create({
+            name: 'ticket-' + message.author.id,
+            type: 0,
+            parent: categoryId,
+            permissionOverwrites: [
+              { id: guild.id, deny: ['ViewChannel'] },
+              { id: message.author.id, allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory'] },
+              { id: discordBot.user.id, allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory', 'ManageChannels'] },
+            ],
+          });
+
+          const embed = new EmbedBuilder()
+            .setTitle('📋 Ticket #' + ticketChannel.name.replace('ticket-', ''))
+            .setDescription([
+              '**მომხმარებელი:** ' + message.author.toString(),
+              '**მიზეზი:** ' + reason,
+              '',
+              '━━━━━━━━━━━━━━━━━━━━━━━━━━',
+              '',
+              'მოდერატორი მალე მოვა.',
+              '`!ticket close` — ticket-ის დახურვა',
+            ].join('\n'))
+            .setColor(0x00d4ff)
+            .setFooter({ text: 'Metro City RP • 2026' })
+            .setTimestamp();
+
+          await ticketChannel.send({ content: message.author.toString(), embeds: [embed] });
+
+          const replyEmbed = modEmbed('✅ Ticket გაიხსნა', 'Ticket არხი: ' + ticketChannel.toString(), 0x2ecc71);
+          message.reply({ embeds: [replyEmbed] });
+
+          if (logChannel) {
+            logChannel.send({ embeds: [modEmbed('📋 Ticket გაიხსნა', '**#' + ticketChannel.name + '** | ' + message.author.tag + ' | მიზეზი: ' + reason, 0x00d4ff)] });
+          }
+
+          console.log('[TICKET] OPEN ' + ticketChannel.name + ' by ' + message.author.tag);
+        } catch (e) {
+          message.reply({ embeds: [modEmbed('❌ Error', 'Ticket-ის შექმნა ვერ მოხერხდა: ' + e.message)] });
+        }
+        return;
+      }
+
+      // !ticket close
+      if (sub === 'close') {
+        if (!message.channel.name || !message.channel.name.startsWith('ticket-')) {
+          return message.reply({ embeds: [modEmbed('❌ Error', 'ეს არ არის ticket არხი.')] });
+        }
+        if (!hasMod(member) && !message.channel.name.endsWith(message.author.id)) {
+          return message.reply({ embeds: [modEmbed('❌ Permission Denied', 'მხოლოდ მოდერატორს ან ticket-ის მფლობელს შეუძლია დახურვა.')] });
+        }
+
+        const logChannel = message.guild.channels.cache.find(c => c.name.toLowerCase() === 'ticket-logs');
+        const embed = modEmbed('🔒 Ticket დაიხურა', 'დახურა: ' + message.author.tag, 0xe74c3c);
+
+        if (logChannel) {
+          logChannel.send({ embeds: [modEmbed('🔒 Ticket დაიხურა', '**#' + message.channel.name + '** | ' + message.author.tag, 0xe74c3c)] });
+        }
+
+        console.log('[TICKET] CLOSE ' + message.channel.name + ' by ' + message.author.tag);
+        message.reply({ embeds: [embed] }).then(() => {
+          setTimeout(() => message.channel.delete().catch(() => {}), 3000);
+        });
+        return;
+      }
+
+      // !ticket closeall
+      if (sub === 'closeall') {
+        if (!hasMod(member)) {
+          return message.reply({ embeds: [modEmbed('❌ Permission Denied', 'მხოლოდ მოდერატორს შეუძლია.')] });
+        }
+        const tickets = message.guild.channels.cache.filter(c => c.name.startsWith('ticket-'));
+        if (tickets.size === 0) {
+          return message.reply({ embeds: [modEmbed('ℹ️ Info', 'ღია ticket-ები არ არის.')] });
+        }
+        let count = 0;
+        for (const [, ch] of tickets) {
+          await ch.delete().catch(() => {});
+          count++;
+        }
+        message.reply({ embeds: [modEmbed('✅ დაიხურა', count + ' ticket დაიხურა.', 0x2ecc71)] });
+        console.log('[TICKET] CLOSEALL ' + count + ' tickets');
+        return;
+      }
+
+      // !help ticket
+      const embed = modEmbed('📋 Ticket Commands', [
+        '`!ticket open [reason]` — Ticket-ის გახსნა',
+        '`!ticket close` — Ticket-ის დახურვა',
+        '`!ticket closeall` — ყველა ticket-ის დახურვა',
+      ].join('\n'), 0x00d4ff);
+      message.reply({ embeds: [embed] });
+      return;
+    }
+
+    // ══════════════════════════════════════
+    //  EVENT SYSTEM
+    // ══════════════════════════════════════
+
+    if (cmd === 'event') {
+      const sub = args[0] ? args[0].toLowerCase() : '';
+
+      // !event create <name> | <DD.MM.YYYY> | <HH:MM> | [description]
+      if (sub === 'create') {
+        if (!hasMod(member)) {
+          return message.reply({ embeds: [modEmbed('❌ Permission Denied', 'მხოლოდ მოდერატორს შეუძლია.')] });
+        }
+        const full = args.slice(1).join(' ');
+        const parts = full.split('|').map(p => p.trim());
+        if (parts.length < 3) {
+          return message.reply({ embeds: [modEmbed('❌ Error', 'გამოყენება: `!event create <სახელი> | <დღე.თვე.წელი> | <დრო> | [აღწერა]`\nმაგ: `!event create Giveaway | 28.06.2026 | 20:00 | დიდი გივეი!`')] });
+        }
+
+        const [name, dateStr, timeStr] = parts;
+        const desc = parts[3] || 'ღონისძიება';
+        const [day, month, year] = dateStr.split('.').map(Number);
+                        const [hour, minute] = timeStr.split(':').map(Number);
+                        const eventDate = new Date(year, month - 1, day, hour, minute);
+
+                        if (isNaN(eventDate.getTime()) || eventDate <= new Date()) {
+                          return message.reply({ embeds: [modEmbed('❌ Error', 'თარიღი არასწორია ან უკვე წასულია.')] });
+                        }
+
+                        const events = loadEvents();
+                        const id = Date.now().toString(36);
+                        events.push({
+                          id, name, description: desc,
+                          date: eventDate.toISOString(),
+                          creator: message.author.tag,
+                          channel: message.channel.id,
+                          reminded: false,
+                        });
+                        saveEvents(events);
+
+                        const embed = new EmbedBuilder()
+                          .setTitle('📅 ' + name)
+                          .setDescription([
+                            '**📝 აღწერა:** ' + desc,
+                            '',
+                            '**📅 თარიღი:** ' + dateStr,
+                            '**⏰ დრო:** ' + timeStr,
+                            '',
+                            '**👤 შემქმნელი:** ' + message.author.tag,
+                            '',
+                            '━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                            '`!event list` — ყველა ღონისძიება',
+                          ].join('\n'))
+                          .setColor(0x00d4ff)
+                          .setFooter({ text: 'Metro City RP • 2026' })
+                          .setTimestamp();
+
+                        message.reply({ embeds: [embed] });
+                        console.log('[EVENT] CREATE: ' + name + ' by ' + message.author.tag);
+                        return;
+                      }
+
+      // !event list
+      if (sub === 'list' || sub === '') {
+        const events = loadEvents();
+        const upcoming = events.filter(e => new Date(e.date) > new Date()).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        if (upcoming.length === 0) {
+          return message.reply({ embeds: [modEmbed('📅 ღონისძიებები', 'დაგეგილი ღონისძიებები არ არის.', 0x00d4ff)] });
+        }
+
+        const list = upcoming.map((e, i) => {
+          const d = new Date(e.date);
+          const dateStr = d.toLocaleDateString('ka-GE') + ' ' + d.toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit' });
+          return '**' + (i + 1) + '.** ' + e.name + '\n📅 ' + dateStr + ' | 👤 ' + e.creator;
+        }).join('\n\n');
+
+        const embed = new EmbedBuilder()
+          .setTitle('📅 დაგეგილი ღონისძიებები')
+          .setDescription(list)
+          .setColor(0x00d4ff)
+          .setFooter({ text: 'Metro City RP • 2026' })
+          .setTimestamp();
+
+        message.reply({ embeds: [embed] });
+        return;
+      }
+
+      // !event cancel <id>
+      if (sub === 'cancel') {
+        if (!hasMod(member)) {
+          return message.reply({ embeds: [modEmbed('❌ Permission Denied', 'მხოლოდ მოდერატორს შეუძლია.')] });
+        }
+        const events = loadEvents();
+        const eventId = args[1];
+        const idx = events.findIndex(e => e.id === eventId);
+        if (idx === -1) {
+          return message.reply({ embeds: [modEmbed('❌ Error', 'ღონისძიება ვერ მოიძებნა. `!event list` ნახე ID.')] });
+        }
+        const removed = events.splice(idx, 1)[0];
+        saveEvents(events);
+        message.reply({ embeds: [modEmbed('❌ ღონისძიება გაუქმდა', removed.name, 0xe74c3c)] });
+        console.log('[EVENT] CANCEL: ' + removed.name + ' by ' + message.author.tag);
+        return;
+      }
+
+      // !event help
+      const embed = modEmbed('📅 Event Commands', [
+        '`!event create <სახელი> | <დღე.თვე.წელი> | <დრო> | [აღწერა]`',
+        '`!event list` — ღონისძიებების სია',
+        '`!event cancel <id>` — ღონისძიების გაუქმება',
+        '',
+        'მაგ: `!event create Giveaway | 28.06.2026 | 20:00 | დიდი გივეი!`',
+      ].join('\n'), 0x00d4ff);
+      message.reply({ embeds: [embed] });
+      return;
+    }
   });
 
   discordBot.once('ready', async () => {
@@ -904,6 +1170,64 @@ function startWelcomeBot() {
     for (const [, guild] of discordBot.guilds.cache) {
       await setupReactionRoles(guild);
     }
+
+    // Event reminder checker - every minute
+    setInterval(async () => {
+      const events = loadEvents();
+      const now = new Date();
+      let changed = false;
+
+      for (const event of events) {
+        const eventDate = new Date(event.date);
+        const diff = eventDate - now;
+        const minutesLeft = Math.floor(diff / 60000);
+
+        // 30 min reminder
+        if (!event.reminded && minutesLeft <= 30 && minutesLeft > 0) {
+          event.reminded = true;
+          changed = true;
+          try {
+            const ch = await discordBot.channels.fetch(event.channel);
+            if (ch) {
+              const embed = new EmbedBuilder()
+                .setTitle('⏰ შეხსენება: ' + event.name)
+                .setDescription([
+                  '📅 **ღონისძიება 30 წუთში დაიწყება!**',
+                  '',
+                  '📝 ' + event.description,
+                  '⏰ ' + eventDate.toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit' }),
+                ].join('\n'))
+                .setColor(0xf39c12)
+                .setFooter({ text: 'Metro City RP • 2026' })
+                .setTimestamp();
+              await ch.send({ embeds: [embed] });
+              console.log('[EVENT] REMINDER: ' + event.name);
+            }
+          } catch (e) {}
+        }
+
+        // Event started
+        if (diff <= 0 && !event.completed) {
+          event.completed = true;
+          changed = true;
+          try {
+            const ch = await discordBot.channels.fetch(event.channel);
+            if (ch) {
+              const embed = new EmbedBuilder()
+                .setTitle('🎉 ' + event.name + ' დაიწყო!')
+                .setDescription(event.description)
+                .setColor(0x2ecc71)
+                .setFooter({ text: 'Metro City RP • 2026' })
+                .setTimestamp();
+              await ch.send({ embeds: [embed] });
+              console.log('[EVENT] STARTED: ' + event.name);
+            }
+          } catch (e) {}
+        }
+      }
+
+      if (changed) saveEvents(events);
+    }, 60000);
   });
 
   discordBot.login(BOT_TOKEN).catch(e => {

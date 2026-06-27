@@ -443,6 +443,7 @@ async function neonFlash(webhookClient, embed, colors, label) {
 }
 
 const EVENTS_FILE = path.join(__dirname, 'events.json');
+const TICKET_COUNTER_FILE = path.join(__dirname, 'ticket_counter.json');
 
 function loadEvents() {
   try {
@@ -453,6 +454,18 @@ function loadEvents() {
 
 function saveEvents(data) {
   fs.writeFileSync(EVENTS_FILE, JSON.stringify(data, null, 2));
+}
+
+function getNextTicketNumber() {
+  let count = 1;
+  try {
+    if (fs.existsSync(TICKET_COUNTER_FILE)) {
+      const data = JSON.parse(fs.readFileSync(TICKET_COUNTER_FILE, 'utf8'));
+      count = data.count || 1;
+    }
+  } catch (e) {}
+  fs.writeFileSync(TICKET_COUNTER_FILE, JSON.stringify({ count: count + 1 }));
+  return String(count).padStart(3, '0');
 }
 
 // ══════════════════════════════════════
@@ -515,29 +528,48 @@ async function handleTicketButton(interaction) {
   const guild = interaction.guild;
   const user = interaction.user;
 
-  const existing = guild.channels.cache.find(c => c.name === 'ticket-' + user.id);
+  const existing = guild.channels.cache.find(c => c.name.startsWith('ticket-') && c.name.includes(user.id));
   if (existing) {
-    return interaction.reply({ content: '⚠️ თქვენ უკვე გაქვთ ღია ticket: ' + existing.toString(), ephemeral: true });
+    return interaction.reply({ content: '\u26A0\uFE0F \u10D7\u10E5\u10D5\u10D4\u10DC \u10E3\u10D9\u10D5\u10D4 \u10D2\u10D0\u10E5\u10D5\u10D4\u10D7 \u10E5\u10D8\u10D0 ticket: ' + existing.toString(), ephemeral: true });
   }
 
   await interaction.deferReply({ ephemeral: true });
 
   try {
-    const ticketCategory = guild.channels.cache.find(c => c.name.toLowerCase() === 'tickets' && c.type === 4);
+    const ticketNumber = getNextTicketNumber();
+
     let categoryId = null;
+    const ticketCategory = guild.channels.cache.find(c => c.name === 'TICKETS' && c.type === 4);
     if (ticketCategory) {
       categoryId = ticketCategory.id;
     } else {
       try {
-        const cat = await guild.channels.create({ name: 'Tickets', type: 4 });
+        const cat = await guild.channels.create({
+          name: 'TICKETS',
+          type: 4,
+          permissionOverwrites: [
+            { id: guild.id, deny: ['ViewChannel'] },
+            { id: discordBot.user.id, allow: ['ViewChannel'] },
+          ],
+        });
+        // Add admin/mod roles to category
+        const adminRoles = guild.roles.cache.filter(r =>
+          r.permissions.has('Administrator') || r.permissions.has('ManageGuild') || r.name === 'Owner' || r.name === 'Developer'
+        );
+        for (const [, role] of adminRoles) {
+          await cat.permissionOverwrites.edit(role.id, { ViewChannel: true }).catch(() => {});
+        }
         categoryId = cat.id;
       } catch (e) {}
     }
 
+    const channelName = 'ticket-' + ticketNumber;
+
     const ticketChannel = await guild.channels.create({
-      name: 'ticket-' + user.id,
+      name: channelName,
       type: 0,
       parent: categoryId,
+      topic: 'Ticket by ' + user.tag + ' (' + user.id + ')',
       permissionOverwrites: [
         { id: guild.id, deny: ['ViewChannel'] },
         { id: user.id, allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory'] },
@@ -545,8 +577,10 @@ async function handleTicketButton(interaction) {
       ],
     });
 
-    // Add admin/mod roles to ticket
-    const adminRoles = guild.roles.cache.filter(r => r.permissions.has('Administrator') || r.permissions.has('ManageGuild'));
+    // Add admin/mod roles
+    const adminRoles = guild.roles.cache.filter(r =>
+      r.permissions.has('Administrator') || r.permissions.has('ManageGuild') || r.name === 'Owner' || r.name === 'Developer' || r.name === 'Moderator'
+    );
     for (const [, role] of adminRoles) {
       await ticketChannel.permissionOverwrites.edit(role.id, {
         ViewChannel: true,
@@ -556,41 +590,44 @@ async function handleTicketButton(interaction) {
     }
 
     const embed = new EmbedBuilder()
-      .setTitle('📋 Ticket #' + ticketChannel.name.replace('ticket-', ''))
+      .setTitle('\uD83D\uDCCB Ticket #' + ticketNumber)
       .setDescription([
-        '**მომხმარებელი:** ' + user.toString(),
+        '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501',
         '',
-        '━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        '\uD83D\uDC64 **\u10DB\u10DD\u10DB\u10EE\u10DB\u10D0\u10E0\u10D4\u10D1\u10D4\u10DA\u10D8:** ' + user.toString(),
+        '\uD83D\uDCC5 **\u10D3\u10E0\u10DD:** <t:' + Math.floor(Date.now() / 1000) + ':R>',
         '',
-        'მოდერატორი მალე მოვა.',
-        'აღწერეთ თქვენი პრობლემა ან კითხვა.',
+        '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501',
         '',
-        '━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        '\uD83D\uDCDD \u10D0\u10E6\u10D5\u10D4\u10E0\u10D8\u10D7 \u10D7\u10D5\u10D4\u10DC\u10D8 \u10DE\u10E0\u10DD\u10D1\u10DA\u10D4\u10DB\u10D0 \u10D0\u10DC \u10D9\u10D8\u10D7\u10D5\u10D0.',
+        '\u10DB\u10DD\u10D3\u10D4\u10E0\u10D0\u10E2\u10DD\u10E0\u10D8 \u10DB\u10D0\u10DA\u10D4 \u10DB\u10DD\u10D5\u10D0.',
+        '',
+        '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501',
       ].join('\n'))
       .setColor(0x00d4ff)
-      .setFooter({ text: 'Metro City RP • 2026' })
+      .setFooter({ text: 'Metro City RP \u2022 2026' })
       .setTimestamp();
 
     const closeBtn = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId('ticket_close')
-        .setLabel('🔒 Ticket დახურვა')
-        .setStyle(ButtonStyle.Danger)
-        .setEmoji('🔒'),
+        .setLabel('\uD83D\uDD12 Ticket \u10D3\u10D0\u10EE\u10E3\u10E0\u10D5\u10D0')
+        .setStyle(ButtonStyle.Danger),
     );
 
     await ticketChannel.send({ content: user.toString(), embeds: [embed], components: [closeBtn] });
 
-    await interaction.editReply({ content: '✅ Ticket გაიხსნა: ' + ticketChannel.toString() });
+    await interaction.editReply({ content: '\u2705 Ticket \u10D3\u10D0\u10D0\u10EE\u10E1\u10D0: ' + ticketChannel.toString() });
+    setTimeout(() => interaction.deleteReply().catch(() => {}), 5000);
 
     const logChannel = guild.channels.cache.find(c => c.name.toLowerCase() === 'ticket-logs');
     if (logChannel) {
-      logChannel.send({ embeds: [modEmbed('📋 Ticket გაიხსნა', '**#' + ticketChannel.name + '** | ' + user.tag, 0x00d4ff)] });
+      logChannel.send({ embeds: [modEmbed('\uD83D\uDCCB Ticket \u10D3\u10D0\u10D0\u10EE\u10E1\u10D0', '**#' + ticketChannel.name + '** | ' + user.tag, 0x00d4ff)] });
     }
 
-    console.log('[TICKET] OPEN ' + ticketChannel.name + ' by ' + user.tag);
+    console.log('[TICKET] OPEN #' + ticketNumber + ' by ' + user.tag);
   } catch (e) {
-    await interaction.editReply({ content: '❌ Ticket-ის შექმნა ვერ მოხერხდა: ' + e.message });
+    await interaction.editReply({ content: '\u274C Ticket-ის შექმნა ვერ მოხერხდა: ' + e.message });
   }
 }
 
@@ -1106,30 +1143,40 @@ function startWelcomeBot() {
       // !ticket open [reason]
       if (sub === 'open' || sub === '') {
         const guild = message.guild;
-        const ticketCategory = guild.channels.cache.find(c => c.name.toLowerCase() === 'tickets' && c.type === 4);
-        const logChannel = guild.channels.cache.find(c => c.name.toLowerCase() === 'ticket-logs' || c.name.toLowerCase() === 'ticket-logs');
+        const logChannel = guild.channels.cache.find(c => c.name.toLowerCase() === 'ticket-logs');
 
-        const existing = guild.channels.cache.find(c => c.name === 'ticket-' + message.author.id);
+        const existing = guild.channels.cache.find(c => c.name.startsWith('ticket-') && c.topic && c.topic.includes(message.author.id));
         if (existing) {
-          return message.reply({ embeds: [modEmbed('⚠️ Ticket უკვე ღიაა', 'თქვენ უკვე გაქვთ ღია ticket: ' + existing.toString(), 0xf39c12)] });
+          return message.reply({ embeds: [modEmbed('\u26A0\uFE0F Ticket \u10E3\u10D9\u10D5\u10D4 \u10D2\u10D0\u10E5\u10D5\u10D4\u10D7\u10D0', '\u10D7\u10E5\u10D5\u10D4\u10DC \u10E3\u10D9\u10D5\u10D4 \u10D2\u10D0\u10E5\u10D5\u10D4\u10D7 \u10E5\u10D8\u10D0 ticket: ' + existing.toString(), 0xf39c12)] });
         }
 
         let categoryId = null;
+        const ticketCategory = guild.channels.cache.find(c => c.name === 'TICKETS' && c.type === 4);
         if (ticketCategory) {
           categoryId = ticketCategory.id;
         } else {
           try {
-            const cat = await guild.channels.create({ name: 'Tickets', type: 4 });
+            const cat = await guild.channels.create({
+              name: 'TICKETS',
+              type: 4,
+              permissionOverwrites: [
+                { id: guild.id, deny: ['ViewChannel'] },
+                { id: discordBot.user.id, allow: ['ViewChannel'] },
+              ],
+            });
             categoryId = cat.id;
           } catch (e) {}
         }
 
-        const reason = args.slice(1).join(' ') || 'მიზეზი მითითებული არ არის';
+        const ticketNumber = getNextTicketNumber();
+        const channelName = 'ticket-' + ticketNumber;
+        const reason = args.slice(1).join(' ') || '\u10DB\u10D8\u10D6\u10D4\u10D6\u10D8 \u10DB\u10D8\u10D7\u10D8\u10D0\u10E9\u10D4\u10D1\u10E3\u10DA\u10D8 \u10D0\u10E0 \u10D0\u10E0\u10D8\u10E1';
         try {
           const ticketChannel = await guild.channels.create({
-            name: 'ticket-' + message.author.id,
+            name: channelName,
             type: 0,
             parent: categoryId,
+            topic: 'Ticket by ' + message.author.tag + ' (' + message.author.id + ')',
             permissionOverwrites: [
               { id: guild.id, deny: ['ViewChannel'] },
               { id: message.author.id, allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory'] },
@@ -1137,19 +1184,35 @@ function startWelcomeBot() {
             ],
           });
 
+          const adminRoles = guild.roles.cache.filter(r =>
+            r.permissions.has('Administrator') || r.permissions.has('ManageGuild') || r.name === 'Owner' || r.name === 'Developer' || r.name === 'Moderator'
+          );
+          for (const [, role] of adminRoles) {
+            await ticketChannel.permissionOverwrites.edit(role.id, {
+              ViewChannel: true,
+              SendMessages: true,
+              ReadMessageHistory: true,
+            }).catch(() => {});
+          }
+
           const embed = new EmbedBuilder()
-            .setTitle('📋 Ticket #' + ticketChannel.name.replace('ticket-', ''))
+            .setTitle('\uD83D\uDCCB Ticket #' + ticketNumber)
             .setDescription([
-              '**მომხმარებელი:** ' + message.author.toString(),
-              '**მიზეზი:** ' + reason,
+              '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501',
               '',
-              '━━━━━━━━━━━━━━━━━━━━━━━━━━',
+              '\uD83D\uDC64 **\u10DB\u10DD\u10DB\u10EE\u10DB\u10D0\u10E0\u10D4\u10D1\u10D4\u10DA\u10D8:** ' + message.author.toString(),
+              '\uD83D\uDCDD **\u10DB\u10D8\u10D6\u10D4\u10D6\u10D8:** ' + reason,
+              '\uD83D\uDCC5 **\u10D3\u10E0\u10DD:** <t:' + Math.floor(Date.now() / 1000) + ':R>',
               '',
-              'მოდერატორი მალე მოვა.',
-              '`!ticket close` — ticket-ის დახურვა',
+              '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501',
+              '',
+              '\u10DB\u10DD\u10D3\u10D4\u10E0\u10D0\u10E2\u10DD\u10E0\u10D8 \u10DB\u10D0\u10DA\u10D4 \u10DB\u10DD\u10D5\u10D0.',
+              '`!ticket close` \u2014 ticket-\u10D8\u10E1 \u10D3\u10D0\u10EE\u10E3\u10E0\u10D5\u10D0',
+              '',
+              '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501',
             ].join('\n'))
             .setColor(0x00d4ff)
-            .setFooter({ text: 'Metro City RP • 2026' })
+            .setFooter({ text: 'Metro City RP \u2022 2026' })
             .setTimestamp();
 
           await ticketChannel.send({ content: message.author.toString(), embeds: [embed] });

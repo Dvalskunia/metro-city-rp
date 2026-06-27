@@ -24,6 +24,7 @@ const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const WELCOME_WEBHOOK_URL = process.env.WELCOME_WEBHOOK;
 const LEAVE_WEBHOOK_URL = process.env.LEAVE_WEBHOOK;
 const REACTION_ROLES_CHANNEL = process.env.REACTION_ROLES_CHANNEL || '1520182858583375892';
+const TICKET_PANEL_CHANNEL = process.env.TICKET_PANEL_CHANNEL || '1520368523120214136';
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -454,6 +455,173 @@ function saveEvents(data) {
   fs.writeFileSync(EVENTS_FILE, JSON.stringify(data, null, 2));
 }
 
+// ══════════════════════════════════════
+//  TICKET PANEL (Button-based)
+// ══════════════════════════════════════
+
+async function setupTicketPanel(guild) {
+  try {
+    const channel = await guild.channels.fetch(TICKET_PANEL_CHANNEL);
+    if (!channel) {
+      console.error('[❌ TICKET PANEL] Channel not found: ' + TICKET_PANEL_CHANNEL);
+      return;
+    }
+
+    const messages = await channel.messages.fetch({ limit: 30 });
+    const existing = messages.find(m => m.author.id === discordBot.user.id && m.embeds.length > 0 && m.components.length > 0);
+
+    if (existing) {
+      console.log('[✅ TICKET PANEL] Panel already exists');
+      return;
+    }
+
+    const embed = new EmbedBuilder()
+      .setTitle('📋 Ticket სისტემა')
+      .setDescription([
+        'გაქვს პრობლემა ან კითხვა?',
+        '',
+        '**Ticket-ის გასახსნელად ქვემოთ დააჭირე ღილაკს.**',
+        '',
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        '',
+        '📋 **Ticket** — პირადი ჩატი მოდერატორთან',
+        '🔒 **დახურვა** — ticket-ის დახურვა შიგნიდან',
+        '',
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      ].join('\n'))
+      .setColor(0x00d4ff)
+      .setFooter({ text: 'Metro City RP • 2026' })
+      .setTimestamp();
+
+    const button = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('ticket_open')
+        .setLabel('📋 Ticket გახსნა')
+        .setStyle(ButtonStyle.Primary)
+        .setEmoji('📋'),
+    );
+
+    await channel.send({ embeds: [embed], components: [button] });
+    console.log('[✅ TICKET PANEL] Panel sent to #' + channel.name);
+  } catch (e) {
+    console.error('[❌ TICKET PANEL] ' + e.message);
+  }
+}
+
+async function handleTicketButton(interaction) {
+  if (!interaction.isButton()) return;
+  if (interaction.customId !== 'ticket_open') return;
+
+  const guild = interaction.guild;
+  const user = interaction.user;
+
+  const existing = guild.channels.cache.find(c => c.name === 'ticket-' + user.id);
+  if (existing) {
+    return interaction.reply({ content: '⚠️ თქვენ უკვე გაქვთ ღია ticket: ' + existing.toString(), ephemeral: true });
+  }
+
+  await interaction.deferReply({ ephemeral: true });
+
+  try {
+    const ticketCategory = guild.channels.cache.find(c => c.name.toLowerCase() === 'tickets' && c.type === 4);
+    let categoryId = null;
+    if (ticketCategory) {
+      categoryId = ticketCategory.id;
+    } else {
+      try {
+        const cat = await guild.channels.create({ name: 'Tickets', type: 4 });
+        categoryId = cat.id;
+      } catch (e) {}
+    }
+
+    const ticketChannel = await guild.channels.create({
+      name: 'ticket-' + user.id,
+      type: 0,
+      parent: categoryId,
+      permissionOverwrites: [
+        { id: guild.id, deny: ['ViewChannel'] },
+        { id: user.id, allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory'] },
+        { id: discordBot.user.id, allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory', 'ManageChannels'] },
+      ],
+    });
+
+    // Add admin/mod roles to ticket
+    const adminRoles = guild.roles.cache.filter(r => r.permissions.has('Administrator') || r.permissions.has('ManageGuild'));
+    for (const [, role] of adminRoles) {
+      await ticketChannel.permissionOverwrites.edit(role.id, {
+        ViewChannel: true,
+        SendMessages: true,
+        ReadMessageHistory: true,
+      }).catch(() => {});
+    }
+
+    const embed = new EmbedBuilder()
+      .setTitle('📋 Ticket #' + ticketChannel.name.replace('ticket-', ''))
+      .setDescription([
+        '**მომხმარებელი:** ' + user.toString(),
+        '',
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━',
+        '',
+        'მოდერატორი მალე მოვა.',
+        'აღწერეთ თქვენი პრობლემა ან კითხვა.',
+        '',
+        '━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      ].join('\n'))
+      .setColor(0x00d4ff)
+      .setFooter({ text: 'Metro City RP • 2026' })
+      .setTimestamp();
+
+    const closeBtn = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('ticket_close')
+        .setLabel('🔒 Ticket დახურვა')
+        .setStyle(ButtonStyle.Danger)
+        .setEmoji('🔒'),
+    );
+
+    await ticketChannel.send({ content: user.toString(), embeds: [embed], components: [closeBtn] });
+
+    await interaction.editReply({ content: '✅ Ticket გაიხსნა: ' + ticketChannel.toString() });
+
+    const logChannel = guild.channels.cache.find(c => c.name.toLowerCase() === 'ticket-logs');
+    if (logChannel) {
+      logChannel.send({ embeds: [modEmbed('📋 Ticket გაიხსნა', '**#' + ticketChannel.name + '** | ' + user.tag, 0x00d4ff)] });
+    }
+
+    console.log('[TICKET] OPEN ' + ticketChannel.name + ' by ' + user.tag);
+  } catch (e) {
+    await interaction.editReply({ content: '❌ Ticket-ის შექმნა ვერ მოხერხდა: ' + e.message });
+  }
+}
+
+async function handleCloseTicketButton(interaction) {
+  if (!interaction.isButton()) return;
+  if (interaction.customId !== 'ticket_close') return;
+
+  const channel = interaction.channel;
+  if (!channel.name || !channel.name.startsWith('ticket-')) {
+    return interaction.reply({ content: '❌ ეს არ არის ticket არხი.', ephemeral: true });
+  }
+
+  const isOwner = channel.name === 'ticket-' + interaction.user.id;
+  const isMod = interaction.member.permissions.has('Administrator') || interaction.member.permissions.has('ManageGuild');
+
+  if (!isOwner && !isMod) {
+    return interaction.reply({ content: '❌ მხოლოდ ticket-ის მფლობელს ან ადმინს შეუძლია დახურვა.', ephemeral: true });
+  }
+
+  await interaction.deferReply();
+
+  const logChannel = interaction.guild.channels.cache.find(c => c.name.toLowerCase() === 'ticket-logs');
+  if (logChannel) {
+    logChannel.send({ embeds: [modEmbed('🔒 Ticket დაიხურა', '**#' + channel.name + '** | ' + interaction.user.tag, 0xe74c3c)] });
+  }
+
+  console.log('[TICKET] CLOSE ' + channel.name + ' by ' + interaction.user.tag);
+  await interaction.editReply({ content: '🔒 Ticket იხურება 3 წამში...' });
+  setTimeout(() => channel.delete().catch(() => {}), 3000);
+}
+
 function startWelcomeBot() {
   if (!BOT_TOKEN) {
     console.log('[⚠️] DISCORD_BOT_TOKEN not set - Welcome/Leave bot disabled');
@@ -486,6 +654,11 @@ function startWelcomeBot() {
 
   discordBot.on('messageReactionAdd', handleReactionAdd);
   discordBot.on('messageReactionRemove', handleReactionRemove);
+
+  discordBot.on('interactionCreate', async (interaction) => {
+    await handleTicketButton(interaction);
+    await handleCloseTicketButton(interaction);
+  });
 
   // ══════════════════════════════════════
   //  AUTO MODERATION (24/7)
@@ -1169,6 +1342,7 @@ function startWelcomeBot() {
     console.log('[✅] Bot: ' + discordBot.user.tag + ' | Servers: ' + discordBot.guilds.cache.size);
     for (const [, guild] of discordBot.guilds.cache) {
       await setupReactionRoles(guild);
+      await setupTicketPanel(guild);
     }
 
     // Event reminder checker - every minute

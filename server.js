@@ -98,8 +98,8 @@ const formatPlayers = (players) => {
 const now = () => new Date().toLocaleString('ka-GE', { timeZone: 'Asia/Tbilisi' });
 
 const buttons = new ActionRowBuilder().addComponents(
-  new ButtonBuilder().setLabel('\uD83C\uDFAE \u10E1\u10D4\u10E0\u10D5\u10D4\u10E0\u10D6\u10D4 \u10E8\u10D4\u10E1\u10D5\u10DA\u10D0').setStyle(ButtonStyle.Link).setURL('https://u.tezgate.com/' + SAMP_HOST + ':' + SAMP_PORT),
-  new ButtonBuilder().setLabel('\uD83C\uDF10 \u10D5\u10D4\u10D1\u10E1\u10D0\u10D8\u10E2\u10D8').setStyle(ButtonStyle.Link).setURL(WEBSITE_URL || 'http://localhost:' + PORT),
+  new ButtonBuilder().setLabel('🎮 სერვერზე შესვლა').setStyle(ButtonStyle.Link).setURL('https://u.tezgate.com/' + SAMP_HOST + ':' + SAMP_PORT),
+  new ButtonBuilder().setLabel('🌐 ვებსაიტი').setStyle(ButtonStyle.Link).setURL(WEBSITE_URL || 'http://localhost:' + PORT),
 );
 
 const getBgPath = () => {
@@ -125,19 +125,19 @@ const buildOnline = async (r, queryPing) => {
   const websiteUrl = WEBSITE_URL || 'https://metro-city-rp.onrender.com';
   const desc = [
     '```fix\n' + SAMP_HOST + ':' + SAMP_PORT + '```',
-    '', '> **\uD83D\uDFE2 \u10E1\u10E2\u10D0\u10E2\u10E3\u10E1\u10D8:** `\u10DD\u10DC\u10DA\u10D0\u10D8\u10DC`',
-    '> **\uD83D\uDC65 \u10DB\u10DD\u10E2\u10D0\u10DB\u10D0\u10E8\u10D4\u10D4\u10D1\u10D8:** `' + cur + ' / ' + max + '`',
-    '> **\uD83C\uDF10 \u10D5\u10D4\u10D1\u10E1\u10D0\u10D8\u10E2\u10D8:** ' + websiteUrl,
+    '', '> **🟢 სტატუსი:** `ონლაინ`',
+    '> **👥 მოთამაშეები:** `' + cur + ' / ' + max + '`',
+    '> **🌐 ვებსაიტი:** ' + websiteUrl,
   ];
-  if (cur > 0) desc.push('> **\uD83D\uDCCA \u10DE\u10D8\u10D9\u10D8:** `' + peakPlayers + '`');
+  if (cur > 0) desc.push('> **📊 პიკი:** `' + peakPlayers + '`');
   desc.push('', '```' + bar(cur, max) + '  ' + cur + '/' + max + '```');
-  if (CURRENT_EVENT) desc.push('> **\u2B50 \u10D0\u10E5\u10EA\u10D8\u10D0:** `' + CURRENT_EVENT + '`');
-  desc.push('', '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501');
+  if (CURRENT_EVENT) desc.push('> **⭐ აქცია:** `' + CURRENT_EVENT + '`');
+  desc.push('', '━━━━━━━━━━━━━━━━━━━━━━━━━━');
   const fields = [
-    { name: '\uD83D\uDDFA\uFE0F \u10E0\u10E3\u10D9\u10D0', value: '`' + (r.mapname || 'N/A') + '`', inline: true },
-    { name: '\u23F0 \u10D3\u10E0\u10DD', value: '`' + now() + '`', inline: true },
+    { name: '🗺️ რუკა', value: '`' + (r.mapname || 'N/A') + '`', inline: true },
+    { name: '⏰ დრო', value: '`' + now() + '`', inline: true },
   ];
-  if (playerNames) fields.push({ name: '\u25B8 \u10DD\u10DC\u10DA\u10D0\u10D8\u10DC \u10DB\u10DD\u10E2\u10D0\u10DB\u10D0\u10E8\u10D4\u10D4\u10D1\u10D8', value: playerNames, inline: false });
+  if (playerNames) fields.push({ name: '▸ ონლაინ მოთამაშეები', value: playerNames, inline: false });
   const embed = {
     title: '\u25A3 ' + (r.hostname || 'Metro City RP'),
     color: embedColor(ratio), description: desc.join('\n'), fields,
@@ -154,14 +154,14 @@ const buildOffline = async () => {
     title: '\u25A3 Metro City RP', color: 0xe74c3c,
     description: [
       '```fix\n' + SAMP_HOST + ':' + SAMP_PORT + '```',
-      '', '> **\uD83D\uDD34 \u10E1\u10E2\u10D0\u10E2\u10E3\u10E1\u10D8:** `\u10DD\u10E4\u10DA\u10D0\u10D8\u10DC`',
-      '> **\u274C \u10E1\u10D4\u10E0\u10D5\u10D4\u10E0\u10D8 \u10DB\u10D8\u10E3\u10EF\u10D3\u10DD\u10DB\u10D4\u10DA\u10D8\u10D0**',
-      '> **\uD83C\uDF10 \u10D5\u10D4\u10D1\u10E1\u10D0\u10D8\u10E2\u10D8:** ' + (WEBSITE_URL || 'https://metro-city-rp.onrender.com'),
-      '', '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501',
+      '', '> **🔴 სტატუსი:** `ოფლაინ`',
+      '> **❌ სერვერი მიუწვდომელია**',
+      '> **🌐 ვებსაიტი:** ' + (WEBSITE_URL || 'https://metro-city-rp.onrender.com'),
+      '', '━━━━━━━━━━━━━━━━━━━━━━━━━━',
     ].join('\n'),
     fields: [
-      { name: '\uD83D\uDDFA\uFE0F \u10E0\u10E3\u10D9\u10D0', value: '`\u2014`', inline: true },
-      { name: '\u23F0 \u10D3\u10E0\u10DD', value: '`' + now() + '`', inline: true },
+      { name: '🗺️ რუკა', value: '`—`', inline: true },
+      { name: '⏰ დრო', value: '`' + now() + '`', inline: true },
     ],
     footer: { text: 'Metro City RP \u2022 2026' }, timestamp: new Date().toISOString(),
   };
@@ -214,25 +214,25 @@ const REACTION_ROLES = {
 
 function buildReactionRoleEmbed() {
   return new EmbedBuilder()
-    .setTitle('\uD83C\uDFAD \u10E0\u10DD\u10DA\u10D4\u10D1\u10D8\u10D5\u10D8 \u10D3\u10D0 \u10D0\u10E0\u10E9\u10D8')
+    .setTitle('🎭 როლების არჩევი')
     .setDescription([
-      '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
       '',
-      '\uD83C\uDFD9\uFE0F **\u10DB\u10DD\u10D2\u10D4\u10E1\u10D0\u10DA\u10DB\u10D4\u10D1\u10D8\u10D7 Metro City RP-\u10E8\u10D8!**',
+      '🏙️ **მოგესალმებით Metro City RP-ში!**',
       '',
-      '\u25B6 \u10D0\u10D8\u10D2\u10D4\u10D7\u10D4 \u10E0\u10DD\u10DA\u10D8 \u10E0\u10DD\u10DB \u10E8\u10D4\u10DB\u10DD\u10D2\u10D5\u10D0\u10D4\u10E0\u10D7\u10D3\u10D4\u10D7',
-      '\u25B6 \u10DD\u10E4\u10D8\u10EA\u10D8\u10D0\u10DA\u10E3\u10E0 \u10D3\u10D8\u10E1\u10E5\u10DD\u10E0\u10D3 \u10E1\u10D4\u10E0\u10D5\u10D4\u10E0\u10D6\u10D4!',
+      '▶ აიღეთ როლი რომ შემოგვიერთდეთ',
+      '▶ ოფიციალურ დისქორდ სერვერზე!',
       '',
-      '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
       '',
-      '\uD83C\uDFAE **Player** \u2014 \u10D3\u10D0\u10D8\u10EC\u10E7\u10D4 \u10D7\u10D0\u10DB\u10D0\u10E8\u10D8',
+      '🎮 **Player** — დაიწყე თამაში',
       '',
-      '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
       '',
-      '\u2B07\uFE0F \u10D0\u10D8\u10E6\u10D4\u10D7\u10D4\u10D7 \u10E0\u10D4\u10D0\u10EE\u10EA\u10D8\u10D0\u10E1\u10D8\u10D7 \u10E5\u10D5\u10D4\u10DB\u10DD\u10E2 \u2B07\uFE0F',
+      '⬇️ აიღეთ როლი რეაქციით ⬇️',
     ].join('\n'))
     .setColor(0x00d4ff)
-    .setFooter({ text: 'Metro City RP \u2022 2026' })
+    .setFooter({ text: 'Metro City RP • 2026' })
     .setTimestamp();
 }
 
@@ -390,38 +390,38 @@ if (LEAVE_WEBHOOK_URL) {
 function buildWelcomeEmbed(member) {
   const memberCount = member.guild.memberCount;
   return new EmbedBuilder()
-    .setTitle('\uD83C\uDF34 \u10D5\u10D4\u10DA\u10D9\u10DD\u10DB \u10D6\u10D4 !')
+    .setTitle('𝖂𝖊𝖑𝖈𝖔𝖒𝖊 🌴')
     .setDescription([
-      '> \uD83C\uDFD9 **\u10DB\u10DD\u10D2\u10D4\u10E1\u10D0\u10DA\u10DB\u10D4\u10D1\u10D8\u10D7 Metro City RP-\u10E8\u10D8!**',
+      '> 🏙️ **მოგესალმებით Metro City RP-ში!**',
       '',
-      `\`\`\`\u10DB\u10DD\u10DB\u10EE\u10DB\u10D0\u10E0\u10D4\u10D1\u10D4\u10DA\u10D8: ${member.user.tag}\`\`\``,
+      '```მომხმარებელი: ' + member.user.tag + '```',
       '',
-      '> **\uD83D\uDCCA \u10E1\u10E2\u10D0\u10E2\u10D8\u10E1\u10E2\u10D8\u10D9\u10D0:**',
-      `> \`\`\`\u10DB\u10DD\u10E2\u10D0\u10DB\u10D0\u10E8\u10D4\u10D4\u10D1\u10D8: ${memberCount}\`\`\``,
+      '> **📊 სტატისტიკა:**',
+      '> ```მოთამაშეები: ' + memberCount + '```',
       '',
-      '> \uD83D\uDE94 **\u10D3\u10D0\u10D8\u10EA\u10D0\u10D5\u10D8 \u10E6\u10D4\u10E1\u10D4\u10D1\u10D8 \u10D3\u10D0 \u10D8\u10E1\u10D8\u10D0\u10DB\u10DD\u10D5\u10D6\u10D4 \u10D7\u10D0\u10DB\u10D0\u10E8\u10D8\u10D7!**',
+      '> 🚔 **დაიცავი წესები და ისიამოვნე თამაშით!**',
     ].join('\n'))
     .setColor(NEON_WELCOME[0])
     .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }))
-    .setFooter({ text: 'Metro City RP \u2022 2026' })
+    .setFooter({ text: 'Metro City RP • 2026' })
     .setTimestamp();
 }
 
 function buildLeaveEmbed(member) {
   const memberCount = member.guild.memberCount;
   return new EmbedBuilder()
-    .setTitle('\uD83D\uDCA8 \u10DB\u10DD\u10DB\u10EE\u10DB\u10D0\u10E0\u10D4\u10D1\u10D4\u10DA\u10D8 \u10D3\u10D0\u10E2\u10DD\u10D5\u10D0\u10D5\u10D0 \u10E1\u10D4\u10E0\u10D5\u10D4\u10E0\u10D8')
+    .setTitle('𝕷𝖊𝖆𝖛𝖊 🏙️')
     .setDescription([
-      '> \uD83D\uDCA8 **\u10DB\u10DD\u10DB\u10EE\u10DB\u10D0\u10E0\u10D4\u10D1\u10D4\u10DA\u10D8\u10DB\u10D0 \u10D3\u10D0\u10E2\u10DD\u10D5\u10D0\u10D5\u10D0 \u10E1\u10D4\u10E0\u10D5\u10D4\u10E0\u10D8**',
+      '> 💨 **მომხმარებელმა დატოვა სერვერი**',
       '',
-      `\`\`\`\u10DB\u10DD\u10DB\u10EE\u10DB\u10D0\u10E0\u10D4\u10D1\u10D4\u10DA\u10D8: ${member.user.tag}\`\`\``,
+      '```მომხმარებელი: ' + member.user.tag + '```',
       '',
-      '> **\uD83D\uDCCA \u10E1\u10E2\u10D0\u10E2\u10D8\u10E1\u10E2\u10D8\u10D9\u10D0:**',
-      `> \`\`\`\u10D3\u10D0\u10E0\u10E9\u10D4\u10DC\u10D8\u10DA\u10D8: ${memberCount}\`\`\``,
+      '> **📊 სტატისტიკა:**',
+      '> ```დარჩენილი: ' + memberCount + '```',
     ].join('\n'))
     .setColor(NEON_LEAVE[0])
     .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }))
-    .setFooter({ text: 'Metro City RP \u2022 2026' })
+    .setFooter({ text: 'Metro City RP • 2026' })
     .setTimestamp();
 }
 

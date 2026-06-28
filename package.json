@@ -18,6 +18,7 @@
     "express": "^5.2.1",
     "gifencoder": "^2.0.1",
     "node-fetch": "^2.7.0",
+    "mysql2": "^3.11.0",
     "samp-query": "^0.1.5",
     "sharp": "^0.35.2"
   }

@@ -7,6 +7,7 @@ const { Client, GatewayIntentBits, WebhookClient, AttachmentBuilder, ActionRowBu
 const fs = require('fs');
 const https = require('https');
 const sharp = require('sharp');
+const mysql = require('mysql2/promise');
 
 const PREFIX = '!';
 
@@ -26,6 +27,18 @@ const WELCOME_WEBHOOK_URL = process.env.WELCOME_WEBHOOK;
 const LEAVE_WEBHOOK_URL = process.env.LEAVE_WEBHOOK;
 const REACTION_ROLES_CHANNEL = process.env.REACTION_ROLES_CHANNEL || '1520182858583375892';
 const TICKET_PANEL_CHANNEL = process.env.TICKET_PANEL_CHANNEL || '1520368523120214136';
+
+const RICH_LIST_CHANNEL = process.env.RICH_LIST_CHANNEL || '1520919721799585883';
+const RICH_LIST_INTERVAL = 60 * 60 * 1000;
+
+const dbConfig = {
+  host: process.env.DB_HOST || '164.132.206.179',
+  user: process.env.DB_USER || 'gs333946',
+  password: process.env.DB_PASSWORD || 'JQNcMTD86Pki',
+  database: process.env.DB_NAME || 'gs333946',
+  port: parseInt(process.env.DB_PORT, 10) || 3306,
+  connectTimeout: 10000,
+};
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -700,6 +713,91 @@ async function neonFlash(webhookClient, embed, colors, label) {
   }
 }
 
+// ══════════════════════════════════════
+//  RICH LIST (SQL Database)
+// ══════════════════════════════════════
+
+let dbPool = null;
+
+async function getDbPool() {
+  if (!dbPool) {
+    dbPool = mysql.createPool(dbConfig);
+    console.log('[✅ DB] MySQL pool created');
+  }
+  return dbPool;
+}
+
+async function fetchRichList() {
+  try {
+    const pool = await getDbPool();
+    const [rows] = await pool.execute(
+      'SELECT name, money, bank, (money + bank) AS total_wealth FROM accounts ORDER BY total_wealth DESC LIMIT 10'
+    );
+    return rows;
+  } catch (e) {
+    console.error('[❌ RICH LIST] DB Error: ' + e.message);
+    return null;
+  }
+}
+
+function formatMoney(n) {
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function buildRichListEmbed(players) {
+  const medals = ['🥇', '🥈', '🥉'];
+  const lines = [];
+
+  for (let i = 0; i < players.length; i++) {
+    const p = players[i];
+    const medal = medals[i] || '🔹';
+    lines.push(medal + ' **' + (i + 1) + '.** ' + p.name + ' — $' + formatMoney(p.total_wealth));
+  }
+
+  const updateDate = new Date().toLocaleDateString('ka-GE', { timeZone: 'Asia/Tbilisi' });
+  const updateTime = new Date().toLocaleTimeString('ka-GE', { timeZone: 'Asia/Tbilisi', hour: '2-digit', minute: '2-digit' });
+
+  const embed = new EmbedBuilder()
+    .setTitle('◈ ────── 𝐌𝐄𝐓𝐑𝐎 𝐂𝐈𝐓𝐘 𝐑𝐈𝐂𝐇 𝐋𝐈𝐒𝐓 ────── ◈')
+    .setDescription(lines.join('\n'))
+    .setColor(0xf1c40f)
+    .setFooter({ text: '📊 ბოლო განახლება: ' + updateDate + ' • ' + updateTime })
+    .setTimestamp();
+
+  return embed;
+}
+
+async function postRichList(channel) {
+  const players = await fetchRichList();
+  if (!players || players.length === 0) {
+    console.log('[⚠️ RICH LIST] No data');
+    return;
+  }
+
+  const embed = buildRichListEmbed(players);
+  const footerText = '\n◈ ───────────────────────────────────── ◈';
+
+  try {
+    const messages = await channel.messages.fetch({ limit: 10 });
+    const existing = messages.find(
+      m => m.author.id === discordBot.user.id &&
+           m.embeds.length > 0 &&
+           m.embeds[0].title &&
+           m.embeds[0].title.includes('𝐑𝐈𝐂𝐇 𝐋𝐈𝐒𝐓')
+    );
+
+    if (existing) {
+      await existing.edit({ embeds: [embed] });
+      console.log('[✅ RICH LIST] Updated message');
+    } else {
+      await channel.send({ embeds: [embed] });
+      console.log('[✅ RICH LIST] New message sent');
+    }
+  } catch (e) {
+    console.error('[❌ RICH LIST] Send error: ' + e.message);
+  }
+}
+
 const EVENTS_FILE = path.join(__dirname, 'events.json');
 const TICKET_COUNTER_FILE = path.join(__dirname, 'ticket_counter.json');
 
@@ -1221,6 +1319,7 @@ function startWelcomeBot() {
         '`!userinfo @user` \u2014 User info',
         '`!testwelcome [@user]` \u2014 Test welcome card',
         '`!testleave [@user]` \u2014 Test leave card',
+        '`!richlist` \u2014 Rich List (top 10 richest players)',
       ].join('\n'), 0x00d4ff);
       return message.reply({ embeds: [embed] });
     }
@@ -1261,6 +1360,21 @@ function startWelcomeBot() {
         } else {
           message.reply({ embeds: [modEmbed('\u274C Error', 'GIF generation ან webhook მუშაობს.')] });
         }
+      } catch (e) {
+        message.reply({ embeds: [modEmbed('\u274C Error', e.message)] });
+      }
+      return;
+    }
+
+    // !richlist
+    if (cmd === 'richlist') {
+      try {
+        const players = await fetchRichList();
+        if (!players || players.length === 0) {
+          return message.reply({ embeds: [modEmbed('\u274C Error', 'მონაცემები ვერ მოიძებნა.')] });
+        }
+        const embed = buildRichListEmbed(players);
+        message.reply({ embeds: [embed] });
       } catch (e) {
         message.reply({ embeds: [modEmbed('\u274C Error', e.message)] });
       }
@@ -1820,6 +1934,25 @@ function startWelcomeBot() {
 
       if (changed) saveEvents(events);
     }, 60000);
+
+    // Rich List - every 1 hour
+    try {
+      const richChannel = await discordBot.channels.fetch(RICH_LIST_CHANNEL);
+      if (richChannel) {
+        await postRichList(richChannel);
+        setInterval(async () => {
+          try {
+            const ch = await discordBot.channels.fetch(RICH_LIST_CHANNEL);
+            if (ch) await postRichList(ch);
+          } catch (e) {
+            console.error('[❌ RICH LIST] Interval error: ' + e.message);
+          }
+        }, RICH_LIST_INTERVAL);
+        console.log('[✅ RICH LIST] Interval set (1 hour) | Channel: #' + richChannel.name);
+      }
+    } catch (e) {
+      console.error('[❌ RICH LIST] Setup error: ' + e.message);
+    }
   });
 
   discordBot.login(BOT_TOKEN).catch(e => {

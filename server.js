@@ -6,6 +6,7 @@ const query = require('samp-query');
 const { Client, GatewayIntentBits, WebhookClient, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField } = require('discord.js');
 const fs = require('fs');
 const https = require('https');
+const sharp = require('sharp');
 
 const PREFIX = '!';
 
@@ -522,6 +523,19 @@ function loadEvents() {
 
 function saveEvents(data) {
   fs.writeFileSync(EVENTS_FILE, JSON.stringify(data, null, 2));
+}
+
+const WARNINGS_FILE = path.join(__dirname, 'warnings.json');
+
+function loadWarnings() {
+  try {
+    if (fs.existsSync(WARNINGS_FILE)) return JSON.parse(fs.readFileSync(WARNINGS_FILE, 'utf8'));
+  } catch (e) {}
+  return {};
+}
+
+function saveWarnings(data) {
+  fs.writeFileSync(WARNINGS_FILE, JSON.stringify(data, null, 2));
 }
 
 function getNextTicketNumber() {

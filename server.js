@@ -549,15 +549,6 @@ async function generateWelcomeCard(member) {
   }
 }
 
-    encoder.finish();
-    const gifBuffer = Buffer.concat(chunks);
-    return gifBuffer;
-  } catch (e) {
-    console.error('[WELCOME CARD GIF] Error: ' + e.message);
-    return null;
-  }
-}
-
 function buildLeaveEmbed(member) {
   const memberCount = member.guild.memberCount;
   return new EmbedBuilder()

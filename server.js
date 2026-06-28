@@ -1082,8 +1082,30 @@ function startWelcomeBot() {
         '**ℹ️ Other:**',
         '`!serverinfo` \u2014 Server info',
         '`!userinfo @user` \u2014 User info',
+        '`!testwelcome [@user]` \u2014 Test welcome card',
       ].join('\n'), 0x00d4ff);
       return message.reply({ embeds: [embed] });
+    }
+
+    // !testwelcome
+    if (cmd === 'testwelcome') {
+      if (!hasMod(member)) return message.reply({ embeds: [modEmbed('\u274C Permission Denied', 'Moderator only.')] });
+      const target = message.mentions.members.first() || member;
+      try {
+        const card = await generateWelcomeCard(target);
+        if (card && welcomeWebhook) {
+          await welcomeWebhook.send({
+            embeds: [buildWelcomeEmbed(target)],
+            files: [{ attachment: card, name: 'welcome.gif' }],
+          });
+          message.reply({ embeds: [modEmbed('\u2705 Test Sent', 'Welcome card გაიგზავნა ' + target.user.tag + '-სთვის!', 0x2ecc71)] });
+        } else {
+          message.reply({ embeds: [modEmbed('\u274C Error', 'GIF generation ან webhook მუშაობს.')] });
+        }
+      } catch (e) {
+        message.reply({ embeds: [modEmbed('\u274C Error', e.message)] });
+      }
+      return;
     }
 
     // !ban

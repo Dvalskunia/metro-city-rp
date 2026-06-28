@@ -429,19 +429,20 @@ async function generateWelcomeCard(member) {
     encoder.setQuality(10);
 
     const neonFrames = [
-      { r: 0, g: 212, b: 255, name: 'cyan' },
-      { r: 0, g: 255, b: 136, name: 'green' },
-      { r: 123, g: 104, b: 238, name: 'purple' },
-      { r: 0, g: 200, b: 255, name: 'sky' },
-      { r: 0, g: 255, b: 200, name: 'teal' },
-      { r: 80, g: 120, b: 255, name: 'indigo' },
-      { r: 0, g: 212, b: 255, name: 'cyan' },
+      { r: 0, g: 212, b: 255 },
+      { r: 0, g: 255, b: 136 },
+      { r: 123, g: 104, b: 238 },
+      { r: 0, g: 200, b: 255 },
+      { r: 0, g: 255, b: 200 },
+      { r: 80, g: 120, b: 255 },
+      { r: 0, g: 212, b: 255 },
     ];
 
     const avatarBase64 = avatarBuffer.toString('base64');
     const username = member.user.username.length > 18
       ? member.user.username.substring(0, 16) + '..'
       : member.user.username;
+    const dateStr = new Date().toLocaleDateString('en-GB');
 
     for (let i = 0; i < neonFrames.length; i++) {
       const c = neonFrames[i];
@@ -453,18 +454,18 @@ async function generateWelcomeCard(member) {
       const cg2 = Math.floor(c.g * 0.04);
       const cb2 = Math.floor(c.b * 0.04);
 
-      const bgSvg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <linearGradient id="bg${i}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stop-color="rgb(${cr},${cg},${cb})"/>
             <stop offset="50%" stop-color="rgb(${Math.floor(cr * 0.4)},${Math.floor(cg * 0.4)},${Math.floor(cb * 0.4)})"/>
             <stop offset="100%" stop-color="rgb(${cr2},${cg2},${cb2})"/>
           </linearGradient>
-          <radialGradient id="glow${i}" cx="15%" cy="50%" r="35%">
+          <radialGradient id="rglow" cx="15%" cy="50%" r="35%">
             <stop offset="0%" stop-color="${cn}" stop-opacity="0.15"/>
             <stop offset="100%" stop-color="${cn}" stop-opacity="0"/>
           </radialGradient>
-          <filter id="neon${i}" x="-20%" y="-20%" width="140%" height="140%">
+          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
             <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="glow"/>
             <feMerge>
@@ -472,7 +473,7 @@ async function generateWelcomeCard(member) {
               <feMergeNode in="SourceGraphic"/>
             </feMerge>
           </filter>
-          <filter id="textglow${i}" x="-30%" y="-30%" width="160%" height="160%">
+          <filter id="tglow" x="-30%" y="-30%" width="160%" height="160%">
             <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
             <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="glow"/>
             <feMerge>
@@ -480,13 +481,21 @@ async function generateWelcomeCard(member) {
               <feMergeNode in="SourceGraphic"/>
             </feMerge>
           </filter>
-          <clipPath id="avatarClip${i}">
-            <circle cx="110" cy="140" r="62"/>
+          <filter id="aglow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
+            <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 12 -5" result="glow"/>
+            <feMerge>
+              <feMergeNode in="glow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <clipPath id="ac">
+            <circle cx="110" cy="140" r="56"/>
           </clipPath>
         </defs>
 
-        <rect width="${width}" height="${height}" fill="url(#bg${i})" rx="16"/>
-        <rect width="${width}" height="${height}" fill="url(#glow${i})" rx="16"/>
+        <rect width="${width}" height="${height}" fill="url(#bg)" rx="16"/>
+        <rect width="${width}" height="${height}" fill="url(#rglow)" rx="16"/>
 
         <rect x="4" y="4" width="${width - 8}" height="${height - 8}" fill="none" stroke="${cn}" stroke-width="2" rx="13" opacity="0.4"/>
         <line x1="30" y1="30" x2="30" y2="${height - 30}" stroke="${cn}" stroke-width="1" opacity="0.08"/>
@@ -494,12 +503,13 @@ async function generateWelcomeCard(member) {
         <line x1="${width - 30}" y1="30" x2="${width - 30}" y2="${height - 30}" stroke="${cn}" stroke-width="1" opacity="0.08"/>
         <line x1="${width - 60}" y1="20" x2="${width - 60}" y2="${height - 20}" stroke="${cn}" stroke-width="1" opacity="0.05"/>
 
-        <circle cx="110" cy="140" r="66" fill="none" stroke="${cn}" stroke-width="3" opacity="0.9" filter="url(#neon${i})"/>
-        <circle cx="110" cy="140" r="70" fill="none" stroke="${cn}" stroke-width="1" opacity="0.25"/>
+        <circle cx="110" cy="140" r="62" fill="none" stroke="${cn}" stroke-width="3" filter="url(#aglow)" opacity="0.7"/>
+        <circle cx="110" cy="140" r="58" fill="none" stroke="${cn}" stroke-width="1.5" opacity="0.9"/>
+        <image href="data:image/png;base64,${avatarBase64}" x="54" y="84" width="112" height="112" clip-path="url(#ac)"/>
 
-        <text x="200" y="90" font-family="Georgia, 'Times New Roman', serif" font-size="48" font-weight="bold" fill="#ffffff" filter="url(#textglow${i})" letter-spacing="2">WELCOME</text>
+        <text x="200" y="90" font-family="Georgia, 'Times New Roman', serif" font-size="48" font-weight="bold" fill="#ffffff" filter="url(#tglow)" letter-spacing="2">WELCOME</text>
 
-        <text x="200" y="132" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="28" font-weight="600" fill="${cn}" filter="url(#textglow${i})" letter-spacing="1">${username}</text>
+        <text x="200" y="132" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="28" font-weight="600" fill="${cn}" filter="url(#tglow)" letter-spacing="1">${username}</text>
 
         <text x="200" y="168" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#8899aa" letter-spacing="3">MEMBER  #${member.guild.memberCount}</text>
 
@@ -507,33 +517,11 @@ async function generateWelcomeCard(member) {
 
         <text x="200" y="215" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#556677" letter-spacing="5">METRO  CITY  RP</text>
 
-        <text x="${width - 40}" y="${height - 20}" font-family="monospace" font-size="11" fill="${cn}" opacity="0.35" text-anchor="end">${new Date().toLocaleDateString('en-GB')}</text>
+        <text x="${width - 40}" y="${height - 20}" font-family="monospace" font-size="11" fill="${cn}" opacity="0.35" text-anchor="end">${dateStr}</text>
       </svg>`;
 
-      const avatarSvg = `<svg width="140" height="140" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <filter id="drop${i}">
-            <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="${cn}" flood-opacity="0.6"/>
-          </filter>
-        </defs>
-        <circle cx="70" cy="70" r="62" fill="none" stroke="${cn}" stroke-width="3" filter="url(#drop${i})" opacity="0.5"/>
-        <circle cx="70" cy="70" r="62" fill="none" stroke="${cn}" stroke-width="1.5" opacity="0.8"/>
-        <clipPath id="circ${i}">
-          <circle cx="70" cy="70" r="58"/>
-        </clipPath>
-        <image href="data:image/png;base64,${avatarBase64}" x="12" y="12" width="116" height="116" clip-path="url(#circ${i})"/>
-      </svg>`;
-
-      const avatarOverlay = Buffer.from(avatarSvg);
-
-      const frame = await sharp(Buffer.from(bgSvg))
+      const frame = await sharp(Buffer.from(svg))
         .resize(width, height)
-        .composite([{
-          input: avatarOverlay,
-          top: 0,
-          left: 40,
-          fit: 'contain',
-        }])
         .raw()
         .toBuffer();
 
@@ -541,10 +529,139 @@ async function generateWelcomeCard(member) {
     }
 
     encoder.finish();
-    const gifBuffer = Buffer.concat(chunks);
-    return gifBuffer;
+    return Buffer.concat(chunks);
   } catch (e) {
     console.error('[WELCOME CARD GIF] Error: ' + e.message);
+    return null;
+  }
+}
+
+async function generateLeaveCard(member) {
+  try {
+    const fetch = (await import('node-fetch')).default;
+    const GIFEncoder = require('gifencoder');
+    const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 256 });
+    const avatarRes = await fetch(avatarURL);
+    const avatarBuffer = Buffer.from(await avatarRes.arrayBuffer());
+
+    const width = 933;
+    const height = 280;
+    const encoder = new GIFEncoder(width, height);
+    const chunks = [];
+    encoder.createReadStream().on('data', (chunk) => chunks.push(chunk));
+
+    encoder.start();
+    encoder.setRepeat(0);
+    encoder.setDelay(300);
+    encoder.setQuality(10);
+
+    const leaveFrames = [
+      { r: 255, g: 0, b: 255 },
+      { r: 255, g: 68, b: 68 },
+      { r: 255, g: 0, b: 136 },
+      { r: 255, g: 68, b: 68 },
+      { r: 255, g: 0, b: 255 },
+      { r: 255, g: 20, b: 147 },
+      { r: 231, g: 76, b: 60 },
+    ];
+
+    const avatarBase64 = avatarBuffer.toString('base64');
+    const username = member.user.username.length > 18
+      ? member.user.username.substring(0, 16) + '..'
+      : member.user.username;
+    const dateStr = new Date().toLocaleDateString('en-GB');
+
+    for (let i = 0; i < leaveFrames.length; i++) {
+      const c = leaveFrames[i];
+      const cn = `rgb(${c.r},${c.g},${c.b})`;
+      const cr = Math.floor(c.r * 0.10);
+      const cg = Math.floor(c.g * 0.10);
+      const cb = Math.floor(c.b * 0.10);
+      const cr2 = Math.floor(c.r * 0.03);
+      const cg2 = Math.floor(c.g * 0.03);
+      const cb2 = Math.floor(c.b * 0.03);
+
+      const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="rgb(${cr},${cg},${cb})"/>
+            <stop offset="50%" stop-color="rgb(${Math.floor(cr * 0.4)},${Math.floor(cg * 0.4)},${Math.floor(cb * 0.4)})"/>
+            <stop offset="100%" stop-color="rgb(${cr2},${cg2},${cb2})"/>
+          </linearGradient>
+          <radialGradient id="rglow" cx="15%" cy="50%" r="35%">
+            <stop offset="0%" stop-color="${cn}" stop-opacity="0.12"/>
+            <stop offset="100%" stop-color="${cn}" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+            <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="glow"/>
+            <feMerge>
+              <feMergeNode in="glow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="tglow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
+            <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="glow"/>
+            <feMerge>
+              <feMergeNode in="glow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="aglow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
+            <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 12 -5" result="glow"/>
+            <feMerge>
+              <feMergeNode in="glow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <clipPath id="ac">
+            <circle cx="110" cy="140" r="56"/>
+          </clipPath>
+          <filter id="desat" x="0%" y="0%" width="100%" height="100%">
+            <feColorMatrix type="saturate" values="0.3"/>
+          </filter>
+        </defs>
+
+        <rect width="${width}" height="${height}" fill="url(#bg)" rx="16"/>
+        <rect width="${width}" height="${height}" fill="url(#rglow)" rx="16"/>
+
+        <rect x="4" y="4" width="${width - 8}" height="${height - 8}" fill="none" stroke="${cn}" stroke-width="2" rx="13" opacity="0.35"/>
+        <line x1="30" y1="30" x2="30" y2="${height - 30}" stroke="${cn}" stroke-width="1" opacity="0.06"/>
+        <line x1="60" y1="20" x2="60" y2="${height - 20}" stroke="${cn}" stroke-width="1" opacity="0.04"/>
+        <line x1="${width - 30}" y1="30" x2="${width - 30}" y2="${height - 30}" stroke="${cn}" stroke-width="1" opacity="0.06"/>
+        <line x1="${width - 60}" y1="20" x2="${width - 60}" y2="${height - 20}" stroke="${cn}" stroke-width="1" opacity="0.04"/>
+
+        <circle cx="110" cy="140" r="62" fill="none" stroke="${cn}" stroke-width="3" filter="url(#aglow)" opacity="0.5"/>
+        <circle cx="110" cy="140" r="58" fill="none" stroke="${cn}" stroke-width="1.5" opacity="0.7"/>
+        <image href="data:image/png;base64,${avatarBase64}" x="54" y="84" width="112" height="112" clip-path="url(#ac)" filter="url(#desat)"/>
+
+        <text x="200" y="90" font-family="Georgia, 'Times New Roman', serif" font-size="48" font-weight="bold" fill="#ffffff" filter="url(#tglow)" letter-spacing="2">GOODBYE</text>
+
+        <text x="200" y="132" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="28" font-weight="600" fill="${cn}" filter="url(#tglow)" letter-spacing="1">${username}</text>
+
+        <text x="200" y="168" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="16" fill="#8899aa" letter-spacing="3">MEMBERS LEFT  ${member.guild.memberCount}</text>
+
+        <line x1="200" y1="185" x2="420" y2="185" stroke="${cn}" stroke-width="1" opacity="0.3"/>
+
+        <text x="200" y="215" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" fill="#556677" letter-spacing="5">METRO  CITY  RP</text>
+
+        <text x="${width - 40}" y="${height - 20}" font-family="monospace" font-size="11" fill="${cn}" opacity="0.35" text-anchor="end">${dateStr}</text>
+      </svg>`;
+
+      const frame = await sharp(Buffer.from(svg))
+        .resize(width, height)
+        .raw()
+        .toBuffer();
+
+      encoder.addFrame(frame);
+    }
+
+    encoder.finish();
+    return Buffer.concat(chunks);
+  } catch (e) {
+    console.error('[LEAVE CARD GIF] Error: ' + e.message);
     return null;
   }
 }
@@ -859,7 +976,27 @@ function startWelcomeBot() {
   discordBot.on('guildMemberRemove', async (member) => {
     console.log('[👋 LEAVE] ' + member.user.tag + ' | ' + member.guild.name);
     if (leaveWebhook) {
-      await neonFlash(leaveWebhook, buildLeaveEmbed(member), NEON_LEAVE, 'LEAVE');
+      const card = await generateLeaveCard(member);
+      if (card) {
+        try {
+          const msg = await leaveWebhook.send({
+            embeds: [buildLeaveEmbed(member)],
+            files: [{ attachment: card, name: 'leave.gif' }],
+          });
+          console.log('[✅ LEAVE] Card sent ' + now());
+          for (const color of NEON_LEAVE) {
+            await sleep(400);
+            try {
+              await leaveWebhook.editMessage(msg, { embeds: [EmbedBuilder.from(buildLeaveEmbed(member)).setColor(color)] });
+            } catch (e) { break; }
+          }
+        } catch (e) {
+          console.error('[❌ LEAVE] ' + e.message);
+          await neonFlash(leaveWebhook, buildLeaveEmbed(member), NEON_LEAVE, 'LEAVE');
+        }
+      } else {
+        await neonFlash(leaveWebhook, buildLeaveEmbed(member), NEON_LEAVE, 'LEAVE');
+      }
     }
   });
 
@@ -1083,6 +1220,7 @@ function startWelcomeBot() {
         '`!serverinfo` \u2014 Server info',
         '`!userinfo @user` \u2014 User info',
         '`!testwelcome [@user]` \u2014 Test welcome card',
+        '`!testleave [@user]` \u2014 Test leave card',
       ].join('\n'), 0x00d4ff);
       return message.reply({ embeds: [embed] });
     }
@@ -1099,6 +1237,27 @@ function startWelcomeBot() {
             files: [{ attachment: card, name: 'welcome.gif' }],
           });
           message.reply({ embeds: [modEmbed('\u2705 Test Sent', 'Welcome card გაიგზავნა ' + target.user.tag + '-სთვის!', 0x2ecc71)] });
+        } else {
+          message.reply({ embeds: [modEmbed('\u274C Error', 'GIF generation ან webhook მუშაობს.')] });
+        }
+      } catch (e) {
+        message.reply({ embeds: [modEmbed('\u274C Error', e.message)] });
+      }
+      return;
+    }
+
+    // !testleave
+    if (cmd === 'testleave') {
+      if (!hasMod(member)) return message.reply({ embeds: [modEmbed('\u274C Permission Denied', 'Moderator only.')] });
+      const target = message.mentions.members.first() || member;
+      try {
+        const card = await generateLeaveCard(target);
+        if (card && leaveWebhook) {
+          await leaveWebhook.send({
+            embeds: [buildLeaveEmbed(target)],
+            files: [{ attachment: card, name: 'leave.gif' }],
+          });
+          message.reply({ embeds: [modEmbed('\u2705 Test Sent', 'Leave card გაიგზავნა ' + target.user.tag + '-სთვის!', 0x2ecc71)] });
         } else {
           message.reply({ embeds: [modEmbed('\u274C Error', 'GIF generation ან webhook მუშაობს.')] });
         }

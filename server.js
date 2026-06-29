@@ -43,6 +43,14 @@ const dbConfig = {
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/') || req.path.includes('.') || req.path === '/api/health') {
+    return next();
+  }
+  trackVisitor(req);
+  next();
+});
+
 let peakPlayers = 0;
 let cachedData = null;
 let lastFetch = 0;
@@ -73,6 +81,47 @@ function getDailyStats() {
     activePlayers: dailyActivePlayers.size,
     peakOnline: dailyPeakPlayers,
     playerNames: Array.from(dailyActivePlayers).slice(0, 30),
+  };
+}
+
+// ══════════════════════════════════════
+//  VISITOR TRACKING
+// ══════════════════════════════════════
+
+let dailyVisitors = new Set();
+let dailyPageViews = 0;
+let dailyVisitorPeak = 0;
+let dailyVisitorDate = new Date().toLocaleDateString('en-GB', { timeZone: 'Asia/Tbilisi' });
+
+function trackVisitor(req) {
+  const today = new Date().toLocaleDateString('en-GB', { timeZone: 'Asia/Tbilisi' });
+  if (today !== dailyVisitorDate) {
+    console.log('[📅 VISITORS] Reset for ' + today + ' | Was: ' + dailyVisitors.size + ' visitors, ' + dailyPageViews + ' views');
+    dailyVisitors = new Set();
+    dailyPageViews = 0;
+    dailyVisitorPeak = 0;
+    dailyVisitorDate = today;
+  }
+
+  dailyPageViews++;
+
+  const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
+  const cleanIp = ip.split(',')[0].trim();
+  const isNew = !dailyVisitors.has(cleanIp);
+  dailyVisitors.add(cleanIp);
+
+  const current = dailyVisitors.size;
+  if (current > dailyVisitorPeak) dailyVisitorPeak = current;
+
+  return { isNew, total: current };
+}
+
+function getVisitorStats() {
+  return {
+    date: dailyVisitorDate,
+    uniqueVisitors: dailyVisitors.size,
+    totalPageViews: dailyPageViews,
+    peakVisitors: dailyVisitorPeak,
   };
 }
 
@@ -2018,6 +2067,10 @@ app.get('/api/health', (req, res) => res.json({ ok: true, uptime: process.uptime
 
 app.get('/api/daily-stats', (req, res) => {
   res.json(getDailyStats());
+});
+
+app.get('/api/visitor-stats', (req, res) => {
+  res.json(getVisitorStats());
 });
 
 app.listen(PORT, () => {

@@ -649,6 +649,33 @@ body {
     margin: 40px 0;
 }
 
+.activity-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+    margin-top: 0;
+}
+
+.activity-card-wide {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-align: left;
+    padding: 20px 24px;
+}
+
+.activity-card-wide .activity-icon {
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+.activity-card-wide .activity-number {
+    font-size: 32px;
+}
+
+.activity-card-wide .activity-label,
+.activity-card-wide .activity-sub {
+    text-align: left;
+}
+
 .activity-card {
     background: rgba(0, 212, 255, 0.03);
     border: 1px solid rgba(0, 212, 255, 0.1);
@@ -671,8 +698,12 @@ body {
 }
 
 .activity-icon {
-    font-size: 32px;
     margin-bottom: 12px;
+    color: rgba(0, 212, 255, 0.5);
+}
+
+.activity-main .activity-icon {
+    color: rgba(0, 255, 136, 0.6);
 }
 
 .activity-number {
@@ -751,11 +782,17 @@ body {
     .activity-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+    .activity-grid-2 {
+        grid-template-columns: 1fr;
+    }
     .activity-number {
         font-size: 28px;
     }
     .activity-main .activity-number {
         font-size: 36px;
+    }
+    .activity-card-wide .activity-number {
+        font-size: 24px;
     }
 }
 

@@ -101,6 +101,28 @@ function updateDailyUI(data) {
     }
 }
 
+async function fetchVisitorStats() {
+    try {
+        const res = await fetch('/api/visitor-stats');
+        const data = await res.json();
+        updateVisitorUI(data);
+    } catch (err) {
+        console.error('Visitor stats error:', err);
+    }
+}
+
+function updateVisitorUI(data) {
+    const visitorsEl = document.getElementById('dailyUniqueVisitors');
+    const viewsEl = document.getElementById('dailyPageViews');
+    const dateEl = document.getElementById('dailyDate');
+
+    if (visitorsEl) visitorsEl.textContent = data.uniqueVisitors || 0;
+    if (viewsEl) viewsEl.textContent = data.totalPageViews || 0;
+    if (dateEl && (!dateEl.textContent || dateEl.textContent === '--')) {
+        dateEl.textContent = data.date || '--';
+    }
+}
+
 function updateActiveNav() {
     const scrollY = window.scrollY + 100;
     document.querySelectorAll('section[id]').forEach(s => {
@@ -142,7 +164,9 @@ window.addEventListener('scroll', updateActiveNav);
 window.addEventListener('load', () => {
     fetchServerInfo();
     fetchDailyStats();
+    fetchVisitorStats();
     initAnimations();
     setInterval(fetchServerInfo, REFRESH_INTERVAL);
     setInterval(fetchDailyStats, DAILY_REFRESH);
+    setInterval(fetchVisitorStats, DAILY_REFRESH);
 });

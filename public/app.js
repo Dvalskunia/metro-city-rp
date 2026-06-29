@@ -1,6 +1,7 @@
 const SERVER_IP = '141.94.184.106:1381';
 const REFRESH_INTERVAL = 5 * 60 * 1000;
 const DAILY_REFRESH = 30 * 1000;
+const ONLINE_REFRESH = 5 * 1000;
 
 function copyIP() {
     navigator.clipboard.writeText(SERVER_IP).then(() => {
@@ -111,13 +112,45 @@ async function fetchVisitorStats() {
     }
 }
 
+async function fetchOnlineCount() {
+    try {
+        const res = await fetch('/api/server-info');
+        const data = await res.json();
+        const cur = data.currentPlayers || 0;
+        const onlineEl = document.getElementById('dailyCurrentlyOnline');
+        const playersListEl = document.getElementById('playersList2');
+
+        if (onlineEl) {
+            onlineEl.textContent = cur > 0 ? cur : 'Guest';
+            onlineEl.style.color = cur > 0 ? '#00d4ff' : 'rgba(255,255,255,0.3)';
+        }
+
+        if (playersListEl && data.players && data.players.length > 0) {
+            playersListEl.innerHTML = data.players.map((p, i) => {
+                const ping = data.playerPings && data.playerPings[i] ? ' <span class="player-ping">[' + data.playerPings[i] + ']</span>' : '';
+                return '<span class="player-tag">' + esc(p) + ping + '</span>';
+            }).join('');
+        } else if (playersListEl) {
+            playersListEl.innerHTML = '<div class="players-empty">Guest</div>';
+        }
+
+        if (data.time) {
+            document.getElementById('lastUpdate2').textContent = data.time;
+        }
+    } catch (err) {
+        console.error('Online count error:', err);
+    }
+}
+
 function updateVisitorUI(data) {
     const visitorsEl = document.getElementById('dailyUniqueVisitors');
     const viewsEl = document.getElementById('dailyPageViews');
+    const peakEl = document.getElementById('dailyPeakVisitors');
     const dateEl = document.getElementById('dailyDate');
 
     if (visitorsEl) visitorsEl.textContent = data.uniqueVisitors || 0;
     if (viewsEl) viewsEl.textContent = data.totalPageViews || 0;
+    if (peakEl) peakEl.textContent = data.peakVisitors || 0;
     if (dateEl && (!dateEl.textContent || dateEl.textContent === '--')) {
         dateEl.textContent = data.date || '--';
     }
@@ -169,4 +202,5 @@ window.addEventListener('load', () => {
     setInterval(fetchServerInfo, REFRESH_INTERVAL);
     setInterval(fetchDailyStats, DAILY_REFRESH);
     setInterval(fetchVisitorStats, DAILY_REFRESH);
+    setInterval(fetchOnlineCount, ONLINE_REFRESH);
 });

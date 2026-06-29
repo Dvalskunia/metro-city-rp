@@ -650,7 +650,7 @@ body {
 }
 
 .activity-grid-2 {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     margin-top: 0;
 }
 
@@ -793,6 +793,12 @@ body {
     }
     .activity-card-wide .activity-number {
         font-size: 24px;
+    }
+}
+
+@media (max-width: 1024px) and (min-width: 769px) {
+    .activity-grid-2 {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 

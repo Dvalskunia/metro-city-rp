@@ -129,6 +129,45 @@
         </div>
     </section>
 
+    <section id="activity" class="activity-section">
+        <div class="section-bg blur-heavy"><img src="images/background3.png" alt=""></div>
+        <div class="container">
+            <h2 class="section-heading">აქტიურობა დღეს</h2>
+            <div class="activity-grid">
+                <div class="activity-card activity-main">
+                    <div class="activity-icon">👥</div>
+                    <div class="activity-number" id="dailyActivePlayers">--</div>
+                    <div class="activity-label">უნიკალური მოთამაშე</div>
+                    <div class="activity-sub">დღეს სერვერზე შემოსული</div>
+                </div>
+                <div class="activity-card">
+                    <div class="activity-icon">📈</div>
+                    <div class="activity-number" id="dailyPeakOnline">--</div>
+                    <div class="activity-label">პიკი ონლაინ</div>
+                    <div class="activity-sub">ერთდროულად მაქსიმუმი</div>
+                </div>
+                <div class="activity-card">
+                    <div class="activity-icon">🟢</div>
+                    <div class="activity-number" id="dailyCurrentlyOnline">--</div>
+                    <div class="activity-label">ამჟამად ონლაინ</div>
+                    <div class="activity-sub">live მონაცემი</div>
+                </div>
+                <div class="activity-card">
+                    <div class="activity-icon">📅</div>
+                    <div class="activity-number" id="dailyDate">--</div>
+                    <div class="activity-label">თარიღი</div>
+                    <div class="activity-sub" id="dailyResetTime"></div>
+                </div>
+            </div>
+            <div class="activity-players-container">
+                <h3 class="activity-players-title">დღეს შემოსული მოთამაშეები</h3>
+                <div class="activity-players-list" id="dailyPlayersList">
+                    <div class="players-loading">იტვირთება...</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section id="rules" class="rules-section">
         <div class="section-bg blur-heavy"><img src="images/background3.png" alt=""></div>
         <div class="container">

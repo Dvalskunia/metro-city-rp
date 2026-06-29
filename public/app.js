@@ -1,5 +1,6 @@
 const SERVER_IP = '141.94.184.106:1381';
 const REFRESH_INTERVAL = 5 * 60 * 1000;
+const DAILY_REFRESH = 30 * 1000;
 
 function copyIP() {
     navigator.clipboard.writeText(SERVER_IP).then(() => {
@@ -64,6 +65,42 @@ function updateUI(data) {
 
 function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
+async function fetchDailyStats() {
+    try {
+        const res = await fetch('/api/daily-stats');
+        const data = await res.json();
+        updateDailyUI(data);
+    } catch (err) {
+        console.error('Daily stats error:', err);
+    }
+}
+
+function updateDailyUI(data) {
+    const activeEl = document.getElementById('dailyActivePlayers');
+    const peakEl = document.getElementById('dailyPeakOnline');
+    const onlineEl = document.getElementById('dailyCurrentlyOnline');
+    const dateEl = document.getElementById('dailyDate');
+    const resetEl = document.getElementById('dailyResetTime');
+    const listEl = document.getElementById('dailyPlayersList');
+
+    if (activeEl) activeEl.textContent = data.activePlayers || 0;
+    if (peakEl) peakEl.textContent = data.peakOnline || 0;
+    if (onlineEl) {
+        const serverOnline = document.getElementById('playersOnlineBig');
+        onlineEl.textContent = serverOnline ? serverOnline.textContent : '--';
+    }
+    if (dateEl) dateEl.textContent = data.date || '--';
+    if (resetEl) resetEl.textContent = 'მონაცემები შუაღამისას ინახლება';
+
+    if (listEl && data.playerNames && data.playerNames.length > 0) {
+        listEl.innerHTML = data.playerNames.map(name =>
+            '<span class="activity-player-tag">' + esc(name) + '</span>'
+        ).join('');
+    } else if (listEl) {
+        listEl.innerHTML = '<div class="players-loading">დღეს ჯერ არავინ შემოსულა</div>';
+    }
+}
+
 function updateActiveNav() {
     const scrollY = window.scrollY + 100;
     document.querySelectorAll('section[id]').forEach(s => {
@@ -104,6 +141,8 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 window.addEventListener('scroll', updateActiveNav);
 window.addEventListener('load', () => {
     fetchServerInfo();
+    fetchDailyStats();
     initAnimations();
     setInterval(fetchServerInfo, REFRESH_INTERVAL);
+    setInterval(fetchDailyStats, DAILY_REFRESH);
 });

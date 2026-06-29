@@ -48,6 +48,34 @@ let cachedData = null;
 let lastFetch = 0;
 const CACHE_DURATION = 10000;
 
+let dailyActivePlayers = new Set();
+let dailyPeakPlayers = 0;
+let dailyDate = new Date().toLocaleDateString('en-GB', { timeZone: 'Asia/Tbilisi' });
+
+function trackDailyPlayers(players) {
+  const today = new Date().toLocaleDateString('en-GB', { timeZone: 'Asia/Tbilisi' });
+  if (today !== dailyDate) {
+    dailyActivePlayers = new Set();
+    dailyPeakPlayers = 0;
+    dailyDate = today;
+    console.log('[📅 DAILY] Reset counters for ' + today);
+  }
+  for (const p of players) {
+    if (p.name) dailyActivePlayers.add(p.name);
+  }
+  const cur = players.length;
+  if (cur > dailyPeakPlayers) dailyPeakPlayers = cur;
+}
+
+function getDailyStats() {
+  return {
+    date: dailyDate,
+    activePlayers: dailyActivePlayers.size,
+    peakOnline: dailyPeakPlayers,
+    playerNames: Array.from(dailyActivePlayers).slice(0, 30),
+  };
+}
+
 let webhook = null;
 if (WEBHOOK_URL && WEBHOOK_URL !== 'YOUR_WEBHOOK_URL_HERE') {
   webhook = new WebhookClient({ url: WEBHOOK_URL });
@@ -74,6 +102,7 @@ function queryServer() {
         const max = res.maxplayers || 0;
         if (cur > peakPlayers) peakPlayers = cur;
         const players = res.players || [];
+        trackDailyPlayers(players);
         const avgPing = players.length > 0
           ? Math.round(players.reduce((sum, p) => sum + (p.ping || 0), 0) / players.length) : 0;
         resolve({
@@ -83,7 +112,8 @@ function queryServer() {
           avgPing, maxPlayers: max, currentPlayers: cur, peakPlayers, ping,
           map: res.mapname || 'N/A', gamemode: res.gamemode || 'N/A',
           time: new Date().toLocaleString('ka-GE', { timeZone: 'Asia/Tbilisi' }),
-          lastUpdate: new Date().toISOString(), serverIp: SAMP_HOST + ':' + SAMP_PORT
+          lastUpdate: new Date().toISOString(), serverIp: SAMP_HOST + ':' + SAMP_PORT,
+          dailyActive: dailyActivePlayers.size,
         });
       }
     });
@@ -212,6 +242,7 @@ const queryAndSend = async () => {
       } else {
         const cur = res.online || 0;
         const players = res.players || [];
+        trackDailyPlayers(players);
         const avgPing = players.length > 0
           ? Math.round(players.reduce((sum, p) => sum + (p.ping || 0), 0) / players.length) : 0;
         console.log('[📊 ONLINE] ' + cur + '/' + (res.maxplayers || 0) + ' | ' + (res.mapname || 'N/A'));
@@ -1984,6 +2015,10 @@ app.get('/api/server-info', async (req, res) => {
 });
 
 app.get('/api/health', (req, res) => res.json({ ok: true, uptime: process.uptime() }));
+
+app.get('/api/daily-stats', (req, res) => {
+  res.json(getDailyStats());
+});
 
 app.listen(PORT, () => {
   console.log('');
